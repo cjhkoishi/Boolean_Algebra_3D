@@ -2,6 +2,7 @@
 #include<math.h>
 #include<algorithm>
 #define PI 3.141592653589793116
+#define EPSILON 1e-10
 
 template<int n>
 class Point
@@ -41,6 +42,14 @@ public:
 		return res;
 	}
 
+	bool operator==(const Point<n>& rhs)const {
+		for (int i = 0; i < n; i++) {
+			if (abs(coor[i] - rhs.coor[i]) > EPSILON)
+				return false;
+		}
+		return true;
+	}
+
 	Point()
 	{
 		for (int i = 0; i < n; i++) {
@@ -53,6 +62,8 @@ public:
 
 class P2D :public Point<2> {
 public:
+	static const P2D O;
+
 	double cross(P2D rhs) {
 		return coor[0] * rhs.coor[1] - coor[1] * rhs.coor[0];
 	}
@@ -65,6 +76,10 @@ public:
 			res += res < 0 ? 2 * PI : -2 * PI;
 		return res;
 	};
+
+	bool operator==(const P2D& rhs)const {
+		return (const Point<2>)(*this) == (const Point<2>)rhs;
+	}
 
 	P2D() {
 
@@ -104,6 +119,12 @@ public:
 	}
 };
 
+class comparator {
+public:
+	bool operator()(const P2D& p1, const P2D& p2)const {
+		return (p1.coor[1] < p2.coor[1] || p1.coor[1] == p2.coor[1] && p1.coor[0] < p2.coor[0]) && !(p1 == p2);
+	}
+};
 
 template<int n>
 class Simplex {

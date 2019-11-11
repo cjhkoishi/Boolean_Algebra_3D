@@ -13,54 +13,58 @@ void drawG(DCEL& G);
 void readG(string filename, DCEL& G);
 
 int main() {
-	/*Polygon pl;
-	pl.append(P2D(0, 0));
-	pl.append(P2D(1, 1));
-	pl.append(P2D(0, 2));
-	pl.append(P2D(-1, 1));
-	//cout << pl.postion(P2D(-1.1, 0.5));
-	cout << pl.orientation();*/
-	srand(556124464);
-	while (true) {
+	int mode = 1;
+	if (mode == 0) {
+		srand(556124464);
+		while (true) {
+			DCEL G;
+			//readG("data.txt",G);
+			int n_cube = 24;
+			double p = 0.5;
+			vector<P2D> ps;
+			vector<Segment> ls;
+			ps.resize(n_cube * n_cube);
+			for (int i = 0; i < n_cube * n_cube; i++) {
+				ps[i] = P2D(i % n_cube + 0.5, i / n_cube + 0.5);
+			}
+			for (int i = 0; i < n_cube * (n_cube - 1); i++) {
+				double ptest = rand() * 1.0 / RAND_MAX;
+				if (ptest < p || i / (n_cube - 1) == 0 || i / (n_cube - 1) == n_cube - 1) {
+					Segment s;
+					s[0] = i % (n_cube - 1) + n_cube * (i / (n_cube - 1));
+					s[1] = i % (n_cube - 1) + n_cube * (i / (n_cube - 1)) + 1;
+					ls.push_back(s);
+				}
+			}
+			for (int i = 0; i < n_cube * (n_cube - 1); i++) {
+				double ptest = rand() * 1.0 / RAND_MAX;
+				if (ptest < p || i % n_cube == 0 || i % n_cube == n_cube - 1) {
+					Segment s;
+					s[0] = i;
+					s[1] = i + n_cube;
+					ls.push_back(s);
+				}
+			}
+			G.ConvertFromPlanarGraph(ps, ls);
+			drawG(G);
+			cv::imshow("test", img);
+			cv::waitKey(0);
+		}
+		return 0;
+	}
+	if (mode == 1){
 		DCEL G;
-		//readG("data.txt",G);
-		int n_cube = 24;
-		double p = 0.5;
-		vector<P2D> ps;
-		vector<Segment> ls;
-		ps.resize(n_cube * n_cube);
-		for (int i = 0; i < n_cube * n_cube; i++) {
-			ps[i] = P2D(i % n_cube + 0.5, i / n_cube + 0.5);
-		}
-		for (int i = 0; i < n_cube * (n_cube - 1); i++) {
-			double ptest = rand() * 1.0 / RAND_MAX;
-			if (ptest < p || i / (n_cube - 1) == 0 || i / (n_cube - 1) == n_cube - 1) {
-				Segment s;
-				s[0] = i % (n_cube - 1) + n_cube * (i / (n_cube - 1));
-				s[1] = i % (n_cube - 1) + n_cube * (i / (n_cube - 1)) + 1;
-				ls.push_back(s);
-			}
-		}
-		for (int i = 0; i < n_cube * (n_cube - 1); i++) {
-			double ptest = rand() * 1.0 / RAND_MAX;
-			if (ptest < p || i % n_cube == 0 || i % n_cube == n_cube - 1) {
-				Segment s;
-				s[0] = i;
-				s[1] = i + n_cube;
-				ls.push_back(s);
-			}
-		}
-		G.ConvertFromPlanarGraph(ps, ls);
+		readG("data.txt", G);
+		G.Trianglate(*G.face_list.begin());
 		drawG(G);
 		cv::imshow("test", img);
 		cv::waitKey(0);
 	}
-	return 0;
 }
 
 void drawG(DCEL& G)
 {
-	double scale = 20;
+	double scale = 100;
 	int limit = 5;
 	for (auto i = G.face_list.begin(); i != G.face_list.end(); i++) {
 		if ((*i)->outer_edge == 0)
@@ -89,7 +93,7 @@ void drawG(DCEL& G)
 			} while (l != polys[b]);
 
 		}
-		cv::Scalar color = cv::Scalar(rand() % 256, rand() % 256, rand() % 256);
+		cv::Scalar color = cv::Scalar(rand() % 156 + 100, rand() % 156 + 100, rand() % 156 + 100);
 		cv::fillPoly((const cv::InputOutputArray)img,
 			(const cv::Point**)pts,
 			(const int*)nts,

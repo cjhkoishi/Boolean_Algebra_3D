@@ -2,6 +2,7 @@
 #include"Polygon.h"
 #include<set>
 #include <iostream>
+#include <map>
 
 Face* DoublyConnectedEdgeList::GetPostion(P2D p)
 {
@@ -57,7 +58,7 @@ void DoublyConnectedEdgeList::AddEdge(Vertex* v1, Vertex* v2)
 
 	///select the neib edge///
 	HalfEdge* in1, * in2, * out1, * out2;
-	vector<HalfEdge*> comparator;
+	vector<HalfEdge*> sort_pool;
 	P2D base = p2 - p1;
 	auto preb = [&](HalfEdge* l1, HalfEdge* l2)->bool {
 		P2D h1 = l1->next->start_point->p - l1->start_point->p;
@@ -70,22 +71,22 @@ void DoublyConnectedEdgeList::AddEdge(Vertex* v1, Vertex* v2)
 		out1 = e1;
 	}
 	else {
-		GetEdgesByVertex(v1, comparator);
+		GetEdgesByVertex(v1, sort_pool);
 		base = p2 - p1;
-		sort(comparator.begin(), comparator.end(), preb);
-		in1 = comparator[0]->twin;
-		out1 = comparator[comparator.size() - 1];
+		sort(sort_pool.begin(), sort_pool.end(), preb);
+		in1 = sort_pool[0]->twin;
+		out1 = sort_pool[sort_pool.size() - 1];
 	}
 	if (v2->inc_edge == 0) {
 		in2 = e1;
 		out2 = e2;
 	}
 	else {
-		GetEdgesByVertex(v2, comparator);
+		GetEdgesByVertex(v2, sort_pool);
 		base = p1 - p2;
-		sort(comparator.begin(), comparator.end(), preb);
-		in2 = comparator[0]->twin;
-		out2 = comparator[comparator.size() - 1];
+		sort(sort_pool.begin(), sort_pool.end(), preb);
+		in2 = sort_pool[0]->twin;
+		out2 = sort_pool[sort_pool.size() - 1];
 	}
 
 	///set vetex and edge info///
@@ -199,6 +200,156 @@ void DoublyConnectedEdgeList::AddEdge(Vertex* v1, Vertex* v2)
 			}
 		}
 	}
+}
+
+void DoublyConnectedEdgeList::Trianglate(Face* f)
+{
+	struct Trapezoid {
+		HalfEdge* e[2];
+		HalfEdge* top;
+	};
+	class HE_Comp {
+	public:
+		comparator less;
+		bool operator()(HalfEdge* const e1, HalfEdge* const e2) const {
+			bool l = less(e1->start_point->p, e2->start_point->p);
+			bool g = less(e2->start_point->p, e1->start_point->p);
+			return g || !l && !g && less(e1->next->start_point->p, e2->next->start_point->p);
+		}
+	};
+	map<HalfEdge*, int, HE_Comp> Q;//0=normal 1=start 2=end 3=split 4=merge 5=dealed
+	list<Trapezoid> T;
+	list<pair<HalfEdge*, HalfEdge*>> new_edges;
+	comparator less;
+
+	auto type_func = [&](HalfEdge* l)->int {
+		P2D v1 = l->prev->start_point->p;
+		P2D v2 = l->start_point->p;
+		P2D v3 = l->next->start_point->p;
+		P2D d1 = v2 - v1;
+		P2D d2 = v3 - v2;
+		if (!(less(v1, v2) ^ less(v2, v3)))
+			return 0;
+		if (less(v1, v2)) {
+			if (d1.cross(d2) > 0)
+				return 1;
+			else
+				return 3;
+		}
+		else {
+			if (d1.cross(d2) > 0)
+				return 2;
+			else
+				return 4;
+		}
+	};//calculate type of vertex
+
+	vector<HalfEdge*> all_boundary = f->inner_edge;
+	if (f->outer_edge != 0)
+		all_boundary.push_back(f->outer_edge);
+	for (auto i = all_boundary.begin(); i != all_boundary.end(); i++) {
+		HalfEdge* l = *i;
+		do {
+			Q[l] = type_func(l);
+			l = l->next;
+		} while (l != *i);
+	}
+
+	for (auto ev = Q.begin(); ev != Q.end(); ev++) {
+		HalfEdge* current_p = ev->first;
+
+		if (ev->second == 0) {
+			P2D d = current_p->next->start_point->p - current_p->start_point->p;
+			for (auto t = T.begin(); t != T.end(); t++) {
+				bool dir = less(current_p->start_point->p, P2D::O);
+				bool flag = false;
+				if (t->e[0] == current_p->prev && dir) {
+					t->e[0] = current_p;
+					t->top = current_p;
+					flag = true;
+				}
+				else if (t->e[1] == current_p && !dir) {
+					t->e[1] = current_p->prev;
+					t->top = current_p->prev;
+					flag = true;
+				}
+
+				if (flag && Q[t->top] == 4) {
+					new_edges.push_back(pair<HalfEdge*, HalfEdge*>(t->top, current_p));
+					Q[t->top] = 5;
+				}
+				if (flag)
+					break;
+			}
+		}
+
+		if (ev->second == 1) {
+			Trapezoid new_tr;
+			new_tr.e[0] = current_p;
+			new_tr.e[1] = current_p->prev;
+			new_tr.top = current_p;
+			T.push_back(new_tr);
+		}
+
+		if (ev->second == 2) {
+			for (auto t = T.begin(); t != T.end(); t++) {
+				if (t->e[1] == current_p) {
+					if (Q[t->top] == 4) {
+						new_edges.push_back(pair<HalfEdge*, HalfEdge*>(t->top, current_p));
+						Q[t->top] = 5;
+					}
+					T.erase(t);
+					break;
+				}
+			}
+		}
+
+		if (ev->second == 3) {
+			for (auto t = T.begin(); t != T.end(); t++) {
+				P2D r = current_p->start_point->p;
+				P2D r0 = r - t->e[0]->start_point->p;
+				P2D d0 = t->e[0]->next->start_point->p - t->e[0]->start_point->p;
+				P2D r1 = r - t->e[1]->start_point->p;
+				P2D d1 = t->e[1]->next->start_point->p - t->e[1]->start_point->p;
+				if (d0.cross(r0) > 0 && d1.cross(r1) > 0) {
+					new_edges.push_back(pair<HalfEdge*, HalfEdge*>(t->top, current_p));
+
+					Trapezoid new_tr;
+					new_tr.e[0] = current_p;
+					new_tr.e[1] = t->e[1];
+					new_tr.top = current_p;
+					t->e[1] = current_p->prev;
+					t->top = current_p;
+					T.push_back(new_tr);
+
+					break;
+				}
+			}
+		}
+
+		if (ev->second == 4) {
+			list<Trapezoid>::iterator t0, t1;
+			for (auto t = T.begin(); t != T.end(); t++)
+				if (t->e[1] == current_p) {
+					t0 = t;
+					break;
+				}
+			for (auto t = T.begin(); t != T.end(); t++)
+				if (t->e[0] == current_p->prev) {
+					t1 = t;
+					break;
+				}
+			Trapezoid new_tr;
+			new_tr.e[0] = t0->e[0];
+			new_tr.e[1] = t1->e[1];
+			new_tr.top = current_p;
+			T.erase(t0);
+			T.erase(t1);
+			T.push_back(new_tr);
+
+		}
+	}
+	return;
 }
 
 void DoublyConnectedEdgeList::ExportMCode()

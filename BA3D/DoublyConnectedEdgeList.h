@@ -41,6 +41,7 @@ public:
 	void GetEdgesByVertex(Vertex* v, vector<HalfEdge*>& edges);
 	void ConvertFromPlanarGraph(vector<P2D> points, vector<Segment> edges);
 	void AddEdge(Vertex* v1, Vertex* v2);
+	void Trianglate(Face* f);
 
 	void ExportMCode();
 
