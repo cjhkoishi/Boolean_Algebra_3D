@@ -4,6 +4,7 @@
 constexpr auto PI = 3.141592653589793116;
 constexpr auto EPSILON = 1e-10;
 
+
 template<int n>
 class Point
 {
@@ -42,12 +43,14 @@ public:
 		return res;
 	}
 
+	double norm(){
+		return sqrt((*this) * (*this));
+	}
+
 	bool operator==(const Point<n>& rhs)const {
-		for (int i = 0; i < n; i++) {
-			if (abs(coor[i] - rhs.coor[i]) > EPSILON)
-				return false;
-		}
-		return true;
+		auto p1 = *this;
+		auto p2 = rhs;
+		return (p1-p2).norm()<EPSILON;
 	}
 
 	Point()
@@ -128,6 +131,16 @@ public:
 	bool operator()(const P2D& p1, const P2D& p2)const {
 		return (p1.coor[1] < p2.coor[1] || p1.coor[1] == p2.coor[1] && p1.coor[0] < p2.coor[0]) && !(p1 == p2);
 	}
+
+	bool operator()(const P3D& p1, const P3D& p2)const {
+		bool res = false;
+		for (int i = 2; i >= 0; i--)
+			if (p1.coor[i] != p2.coor[i]) {
+				res = p1.coor[i] < p2.coor[i];
+			}
+		res &= !(p1 == p2);
+		return res;
+	}
 };
 
 template<int n>
@@ -159,3 +172,5 @@ public:
 };
 typedef Simplex<2> Segment;
 typedef Simplex<3> Triangle;
+
+extern comparator LESS;

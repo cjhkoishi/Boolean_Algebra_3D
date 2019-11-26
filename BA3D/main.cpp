@@ -13,7 +13,7 @@ void drawG(DCEL& G);
 void readG(string filename, DCEL& G);
 
 int main() {
-	int mode = 3;
+	int mode = cin.get() - '0';
 	srand(556124464);
 	if (mode == 0) {
 
@@ -81,11 +81,15 @@ int main() {
 	}
 	if (mode == 2) {
 		TriangleP T(P3D(0, 0, 0), P3D(2, 1, 1), P3D(0, 2, 2));
-		SegmentP L(P3D(1, 1, 2), P3D(1, 1, 0));
+		SegmentP L(P3D(0, 2, 0), P3D(0, 2, -2));
 		P3D I(0, 0, 0);
 		double r, s, t;
-		T.intersect(L, I, r, s, t);
-		cout << r << " " << s << " " << t << " " << endl;
+		int tc, sc;
+		T.intersect(L, I, r, s, t, tc, sc);
+		cout << r << " " << s << " " << t << " " << tc << " " << sc << " " << endl;
+		SegmentP ray(P3D(1, 2, 3), P3D(2, 0, 5));
+		cout << ray.OnDetect(P3D(0, 4, 1)) << endl;
+
 	}
 	if (mode == 3) {
 		MeshWithCell MC;
@@ -106,7 +110,19 @@ int main() {
 		res[1].WriteToFile("data1.obj");
 		return 0;
 	}
-
+	if (mode == 4) {
+		Surface S;
+		S.LoadFromFile("data.obj");
+		for (int i = 0; i < 21; i++) {
+			for (int j = 0; j < 21; j++) {
+				double x = i * 0.1;
+				double y = j * 0.1;
+				cout << S.Postion(P3D(x, y, 0)) << " ";
+			}
+			cout << endl;
+		}
+		/*cout << S.Postion(P3D(1, 0.6, 0.6)) << " ";*/
+	}
 }
 
 void drawG(DCEL& G)

@@ -72,7 +72,37 @@ void Surface::ElimitateUnusedPoint()
 
 int Surface::Postion(P3D p)
 {
-	return 0;
+	int random_factor = 0;
+	while (true) {
+		SegmentP ray(p, p + P3D(
+			cos(random_factor) * cos(random_factor),
+			cos(random_factor) * sin(random_factor),
+			sin(random_factor)
+		));
+		bool flag = true;
+		int wind_num = 0;
+		for (auto i = faces.begin(); i != faces.end(); i++) {
+			P3D PIN;
+			double r, s, t;
+			int tc, sc;
+			TriangleP T(vertices[(*i)[0]], vertices[(*i)[1]], vertices[(*i)[2]]);
+			bool nontrivial = T.intersect(ray, PIN, r, s, t, tc, sc);
+			if (sc == 0 && T.OnDetect(p)) {
+				return 2;
+			}	
+			if (!nontrivial || tc != 6 && tc != -1) {
+				flag = false;
+				break;
+			}
+			if (tc == 6 && t > 0 && sc != 0) {
+				wind_num++;
+			}
+		}
+		if (flag) {
+			return wind_num % 2;
+		}
+		random_factor++;
+	}
 }
 
 Surface::Surface()
@@ -85,8 +115,25 @@ Surface::~Surface()
 
 double SegmentP::Dist(P3D p)
 {
+	P3D C = vert[1] - vert[0];
+	P3D D = p - vert[0];
+	double line_dist = C.cross(D).norm() / C.norm();
+	return line_dist;
+}
 
-	return 0.0;
+bool SegmentP::OnDetect(P3D p)
+{
+	if (p == vert[0] || p == vert[1])
+		return true;
+	P3D p0 = p - vert[0];
+	P3D p1 = p - vert[1];
+	P3D R = vert[1] - vert[0];
+	bool test1 = p0 * R > 0;
+	bool test2 = p1 * R < 0;
+	if (Dist(p) < EPSILON && test1 && test2) {
+		return true;
+	}
+	return false;
 }
 
 SegmentP::SegmentP()
@@ -99,8 +146,62 @@ SegmentP::SegmentP(P3D P, P3D Q)
 	vert[1] = Q;
 }
 
-int TriangleP::intersect(SegmentP ray, P3D& intersection, double& r, double& s, double& t)
+P3D TriangleP::Norm()
 {
+	P3D C1 = vert[1] - vert[0];
+	P3D C2 = vert[2] - vert[0];
+	return C1.cross(C2);
+}
+
+double TriangleP::Dist(P3D p)
+{
+	P3D D = p - vert[0];
+	P3D C1 = vert[1] - vert[0];
+	P3D C2 = vert[2] - vert[0];
+	double vol = det(D, C1, C2);
+	double factor = C1.cross(C2).norm();
+	double res = vol / factor;
+	return res;
+}
+
+bool TriangleP::OnDetect(P3D p)
+{
+	if (Dist(p) >= EPSILON)
+		return false;
+	P3D n = Norm();
+	bool flag = true;
+	for (int i = 0; i < 3; i++) {
+		P3D B = vert[(i + 1) % 3] - vert[i];
+		P3D D = p - vert[i];
+		if (D.cross(B) * n > 0) {
+			flag = false;
+			break;
+		}
+	}
+	if (flag)
+		return true;
+
+	for (int i = 0; i < 3; i++) {
+		SegmentP S(vert[i], vert[(i + 1) % 3]);
+		if (S.OnDetect(p))
+			return true;
+	}
+
+	return false;
+}
+
+bool TriangleP::intersect(
+	SegmentP ray,
+	P3D& intersection,
+	double& r,
+	double& s,
+	double& t,
+	int& tri_pos_code,
+	int& seg_pos_code)
+{
+	tri_pos_code = -1;
+	seg_pos_code = -1;
+
 	P3D X = vert[1] - vert[0];
 	P3D Y = vert[2] - vert[0];
 	P3D P = ray.vert[1] - ray.vert[0];
@@ -116,8 +217,48 @@ int TriangleP::intersect(SegmentP ray, P3D& intersection, double& r, double& s, 
 	P3D E2 = X.cross(D);
 	r = E1 * P / -t0;
 	s = E2 * P / -t0;
-	if (r >= 0 && s >= 0 && r + s <= 1)
-		return true;
+
+	bool flag = true;
+	for (int i = 0; i < 3; i++)
+		if (flag && vert[i] == intersection)
+		{
+			tri_pos_code = i;
+			flag = false;
+		}
+
+	for (int i = 0; i < 3; i++)
+		if (flag && SegmentP(vert[i], vert[(i + 1) % 3]).OnDetect(intersection))
+		{
+			tri_pos_code = i + 3;
+			flag = false;
+		}
+	if (flag && r >= 0 && s >= 0 && r + s <= 1)
+		tri_pos_code = 6;
+
+	flag = true;
+	for (int i = 0; i < 2; i++)
+		if (flag && ray.vert[i] == intersection)
+		{
+			seg_pos_code = i;
+			flag = false;
+		}
+
+	if (flag && t >= 0 && t <= 1)
+		seg_pos_code = 2;
+
+	return true;
+}
+
+bool TriangleP::intersect(
+	TriangleP sub,
+	SegmentP intersection,
+	double& u0,
+	double& v0,
+	double& u1,
+	double& v1,
+	int& code1,
+	int& code2)
+{
 	return false;
 }
 
