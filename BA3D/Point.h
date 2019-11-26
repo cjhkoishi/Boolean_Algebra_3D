@@ -1,8 +1,8 @@
 #pragma once
 #include<math.h>
 #include<algorithm>
-#define PI 3.141592653589793116
-#define EPSILON 1e-10
+constexpr auto PI = 3.141592653589793116;
+constexpr auto EPSILON = 1e-10;
 
 template<int n>
 class Point
@@ -108,6 +108,10 @@ public:
 		return  p1 * (p2.cross(p3));
 	}
 
+	P3D() {
+
+	}
+
 	P3D(double x, double y, double z) {
 		coor[0] = x;
 		coor[1] = y;
@@ -131,8 +135,27 @@ class Simplex {
 public:
 	int _array[n];
 
+	void sort() {
+		std::sort(_array, _array + n);
+	}
+
+	bool operator<(const Simplex<n>& rhs)const {
+		for (int i = 0; i < n; i++)
+			if (_array[i] != rhs._array[i])
+				return _array[i] < rhs._array[i];
+		return false;
+	}
+
+	bool operator==(const Simplex<n>& rhs)const {
+		for (int i = 0; i < n; i++)
+			if (_array[i] != rhs._array[i])
+				return false;
+		return true;
+	}
+
 	int& operator[](int index) {
 		return _array[index];
 	}
 };
 typedef Simplex<2> Segment;
+typedef Simplex<3> Triangle;

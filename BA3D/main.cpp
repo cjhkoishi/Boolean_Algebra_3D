@@ -1,7 +1,7 @@
 #include<iostream>
 #include<fstream>
 #include<sstream>
-#include"DoublyConnectedEdgeList.h"
+#include"Mesh.h"
 #include<opencv2/core.hpp>
 #include<opencv2/imgproc.hpp>
 #include<opencv2/highgui.hpp>
@@ -13,7 +13,7 @@ void drawG(DCEL& G);
 void readG(string filename, DCEL& G);
 
 int main() {
-	int mode = 0;
+	int mode = 3;
 	srand(556124464);
 	if (mode == 0) {
 
@@ -21,7 +21,7 @@ int main() {
 			DCEL G;
 			//readG("data.txt",G);
 			int n_cube = 9;
-			double p = 0.8;
+			double p = 0.5;
 			vector<P2D> ps;
 			vector<Segment> ls;
 			ps.resize(n_cube * n_cube);
@@ -48,11 +48,19 @@ int main() {
 			}
 			G.ConvertFromPlanarGraph(ps, ls);
 			drawG(G);
+			//cout << G.isTrianglated() << endl;
 			cv::imshow("test", img);
 			cv::waitKey(0);
 			G.Trianglate();
 			img = cv::Mat::zeros(600, 800, CV_8UC3);
+			/*static int kk = 0;
+			for (auto i = G.vertex_list.begin(); i != G.vertex_list.end(); i++) {
+				double arg = kk * 0.618 * 2 * PI;
+				(*i)->p = (*i)->p + 0.1 * P2D(cos(arg), sin(arg));
+				kk++;
+			}*/
 			drawG(G);
+			cout << G.isTrianglated() << endl;
 			cv::imshow("test", img);
 			cv::waitKey(0);
 			img = cv::Mat::zeros(600, 800, CV_8UC3);
@@ -71,7 +79,33 @@ int main() {
 		cv::imshow("test", img);
 		cv::waitKey(0);
 	}
-
+	if (mode == 2) {
+		TriangleP T(P3D(0, 0, 0), P3D(2, 1, 1), P3D(0, 2, 2));
+		SegmentP L(P3D(1, 1, 2), P3D(1, 1, 0));
+		P3D I(0, 0, 0);
+		double r, s, t;
+		T.intersect(L, I, r, s, t);
+		cout << r << " " << s << " " << t << " " << endl;
+	}
+	if (mode == 3) {
+		MeshWithCell MC;
+		MC.LoadFromFile("data.obj");
+		Segment s;
+		s[0] = 0;
+		s[1] = 1;
+		MC.cell.push_back(s);
+		s[0] = 1;
+		s[1] = 2;
+		MC.cell.push_back(s);
+		s[0] = 2;
+		s[1] = 0;
+		MC.cell.push_back(s);
+		vector<Surface> res;
+		MC.Cutting(res);
+		res[0].WriteToFile("data0.obj");
+		res[1].WriteToFile("data1.obj");
+		return 0;
+	}
 
 }
 

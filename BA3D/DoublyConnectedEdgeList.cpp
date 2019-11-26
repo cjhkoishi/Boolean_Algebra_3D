@@ -451,6 +451,25 @@ void DoublyConnectedEdgeList::Trianglate()
 
 }
 
+bool DoublyConnectedEdgeList::isTrianglated()
+{
+	for (auto i = face_list.begin(); i != face_list.end(); i++) {
+		if ((*i)->outer_edge == 0)
+			continue;
+		if ((*i)->inner_edge.size() != 0)
+			return false;
+		HalfEdge* l = (*i)->outer_edge;
+		int num_edges=0;
+		do {
+			num_edges++;
+			l = l->next;
+		} while (l != (*i)->outer_edge);
+		if (num_edges != 3)
+			return false;
+	}
+	return true;
+}
+
 void DoublyConnectedEdgeList::ExportMCode()
 {
 	for (auto i = face_list.begin(); i != face_list.end(); i++) {
