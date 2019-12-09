@@ -214,6 +214,28 @@ void DoublyConnectedEdgeList::AddEdge(Vertex* v1, Vertex* v2)
 		}
 }
 
+Vertex* DoublyConnectedEdgeList::AddVertex(P2D p)
+{
+	bool flag = false;
+	int m = -1;
+	for_each(vertex_list.begin(), vertex_list.end(), [&](Vertex* vert) {
+		if (vert->p == p) {
+			flag = true;
+			return;
+		}
+		if (vert->id > m)
+			m = vert->id;
+		});
+	if (flag) {
+		cout << "The vertex has existed." << endl;
+		return 0;
+	}
+	Vertex* v = new Vertex(p);
+	v->id = m + 1;
+	vertex_list.push_back(v);
+	return v;
+}
+
 void DoublyConnectedEdgeList::Trianglate()
 {
 	struct Trapezoid {
@@ -413,7 +435,7 @@ void DoublyConnectedEdgeList::Trianglate()
 			if (S.size() < 2)
 				S.push(v);
 			else if (V[v].second == V[S.top()].second) {
-				while (S.size()>=2) {
+				while (S.size() >= 2) {
 					HalfEdge* t0 = V[v].first;
 					HalfEdge* t1 = V[S.top()].first;
 					int buf = S.top();
@@ -422,7 +444,7 @@ void DoublyConnectedEdgeList::Trianglate()
 					P2D d0 = t0->start_point->p - t1->start_point->p;
 					P2D d1 = t1->start_point->p - t2->start_point->p;
 					double exproduct = d1.cross(d0);
-					if (exproduct > 0&&V[buf].second==0|| exproduct < 0 && V[buf].second == 1)
+					if (exproduct > 0 && V[buf].second == 0 || exproduct < 0 && V[buf].second == 1)
 						new_edges.push_back(pair<HalfEdge*, HalfEdge*>(t0, t2));
 					else {
 						S.push(buf);
@@ -459,7 +481,7 @@ bool DoublyConnectedEdgeList::isTrianglated()
 		if ((*i)->inner_edge.size() != 0)
 			return false;
 		HalfEdge* l = (*i)->outer_edge;
-		int num_edges=0;
+		int num_edges = 0;
 		do {
 			num_edges++;
 			l = l->next;

@@ -16,7 +16,7 @@ public:
 class TriangleP {
 public:
 	P3D vert[3];
-	
+
 
 	P3D Norm();
 	double Dist(P3D p);
@@ -27,8 +27,8 @@ public:
 	0=0  1=1  2=2  3=01  4=12  5=20  6=012 -1=otherwise
 	0=0  1=1 2=01 -1=otherwise
 	*/
-	bool intersect(SegmentP ray, P3D& intersection, double& r, double& s, double& t,int& tri_pos_code,int& seg_pos_code);
-	bool intersect(TriangleP sub,SegmentP intersection,double& u0,double& v0,double& u1,double& v1,int& code1,int& code2);
+	bool intersect(SegmentP ray, P3D& intersection, double& r, double& s, double& t, int& tri_pos_code, int& seg_pos_code);
+	bool intersect(TriangleP sub, SegmentP intersection, double& u0, double& v0, double& u1, double& v1, int& code1, int& code2);
 
 	TriangleP();
 	TriangleP(P3D P, P3D Q, P3D R);
@@ -52,13 +52,45 @@ public:
 	void WriteToFile(string filename);
 	void ElimitateUnusedPoint();
 	int Postion(P3D p);
+	double Vol();
+	bool Orientation();
 
 	Surface();
 	~Surface();
 };
 
+class Path
+{
+public:
+	struct PointInfo {
+		struct Label {
+			Triangle tri;
+			P2D uv;
+			int pos_code = -1;//0-2 vertex 3-5 edge 6-inside
+			int belong_ID = -65535;
+			Label(Triangle tri, P2D uv, int pos_code, int belong_ID) :
+				tri(tri),
+				uv(uv),
+				pos_code(pos_code),
+				belong_ID(belong_ID)
+			{}
+			Label() {}
+		};
+		P3D point;
+		int pos_code;//0=face 1=edge 2=vertex
+		vector<Label> labels;
+	};
+
+	Surface* S;//目标曲面
+	map<int, PointInfo> new_points;//新点（包括所在三角面，位置标示码）索引对应于原顶点不重复的顶点ID
+	list<Segment> segs;//分割线
+
+	void Triangulate();
+
+};
+
 class MeshWithCell :
-	public Surface 
+	public Surface
 {
 public:
 	vector<Segment> cell;

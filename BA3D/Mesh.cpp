@@ -1,5 +1,6 @@
 #include "Mesh.h"
 #include"UnionFind.h"
+#include <iostream>
 
 void Surface::TriangletionForCell(vector<FaceInfo> info)
 {
@@ -89,7 +90,7 @@ int Surface::Postion(P3D p)
 			bool nontrivial = T.intersect(ray, PIN, r, s, t, tc, sc);
 			if (sc == 0 && T.OnDetect(p)) {
 				return 2;
-			}	
+			}
 			if (!nontrivial || tc != 6 && tc != -1) {
 				flag = false;
 				break;
@@ -103,6 +104,25 @@ int Surface::Postion(P3D p)
 		}
 		random_factor++;
 	}
+}
+
+double Surface::Vol()
+{
+	double res = 0;
+	for_each(faces.begin(), faces.end(), [&](Triangle T) {
+		P3D v[3];
+		v[0] = vertices[T[0]];
+		v[1] = vertices[T[1]];
+		v[2] = vertices[T[2]];
+		double vol = det(v[0], v[1], v[2]);
+		res += vol;
+		});
+	return res;
+}
+
+bool Surface::Orientation()
+{
+	return Vol() > 0;
 }
 
 Surface::Surface()
@@ -259,6 +279,7 @@ bool TriangleP::intersect(
 	int& code1,
 	int& code2)
 {
+
 	return false;
 }
 
@@ -333,4 +354,115 @@ void MeshWithCell::Cutting(vector<Surface>& result)
 		M.faces.push_back(vec_faces[i]);
 	}
 	for_each(result.begin(), result.end(), [&](Surface& M) {M.ElimitateUnusedPoint(); });
+}
+
+void Path::Triangulate()
+{
+	//add new points into the mesh except those which is on the old vertex
+	map<Triangle, vector<PointInfo::Label> > labels;//每个面上的所属点标签，包含二维uv坐标
+	for_each(new_points.begin(), new_points.end(), [&](pair<int, PointInfo> element) {
+		if (element.second.pos_code >= 1)
+			S->vertices[element.first] = element.second.point;
+		auto labs = element.second.labels;
+		for_each(labs.begin(), labs.end(), [&](PointInfo::Label& lab) {
+			labels[lab.tri].push_back(lab);
+			});
+		});
+	//handle each triangle.
+
+
+
+	for_each(labels.begin(), labels.end(), [&](pair<Triangle, vector<PointInfo::Label> > element) {
+		cout << element.first[0] << element.first[1] << element.first[2] << endl;
+		DCEL G;
+		map<int, Vertex*> ID;//用于存储DCEL顶点ID
+		map<Vertex*, int> inv_ID;
+		vector<int> side_point[3];//边界点ID
+		side_point[0].push_back(element.first[0]);
+		side_point[0].push_back(element.first[1]);
+		side_point[1].push_back(element.first[1]);
+		side_point[1].push_back(element.first[2]);
+		side_point[2].push_back(element.first[2]);
+		side_point[2].push_back(element.first[0]);
+		Vertex* IV;
+		IV = G.AddVertex(P2D(0, 0));
+		ID[element.first[0]] = IV;
+		inv_ID[IV] = element.first[0];
+		IV = G.AddVertex(P2D(1, 0));
+		ID[element.first[1]] = IV;
+		inv_ID[IV] = element.first[1];
+		IV = G.AddVertex(P2D(0, 1));
+		ID[element.first[2]] = IV;
+		inv_ID[IV] = element.first[2];
+
+		map<int, PointInfo::Label> lab_ID;
+
+		//在G中添加点，分为边界点与内点，边界点需排序处理
+		for_each(element.second.begin(), element.second.end(), [&](PointInfo::Label& lab) {
+			if (lab.pos_code < 3) {
+				lab_ID[lab.belong_ID] = lab;
+				return;
+			}
+			if (lab.pos_code < 6 && lab.pos_code >= 3) {
+				side_point[lab.pos_code - 3].push_back(lab.belong_ID);
+			}
+			Vertex* V = G.AddVertex(lab.uv);
+			ID[lab.belong_ID] = V;
+			inv_ID[V] = lab.belong_ID;
+			lab_ID[lab.belong_ID] = lab;
+			});
+		//为边界点排序
+		P2D base;
+		auto comp = [&](int p1, int p2)->bool {
+			P2D t1 = ID[p1]->p - base;
+			P2D t2 = ID[p2]->p - base;
+			return abs(t1.coor[0]) + abs(t1.coor[1]) < abs(t2.coor[0]) + abs(t2.coor[1]);
+		};
+		base = P2D(0, 0);
+		sort(side_point[0].begin(), side_point[0].end(), comp);
+		base = P2D(1, 0);
+		sort(side_point[1].begin(), side_point[1].end(), comp);
+		base = P2D(0, 1);
+		sort(side_point[2].begin(), side_point[2].end(), comp);
+		//连接边界
+		for (int i = 0; i < 3; i++) {
+			for (int j = 0; j < side_point[i].size() - 1; j++) {
+				G.AddEdge(ID[side_point[i][j]], ID[side_point[i][j + 1]]);
+			}
+		}
+		//添内部边
+		for_each(segs.begin(), segs.end(), [&](Segment seg) {
+			PointInfo::Label end_pt[2];
+			for (int i = 0; i < 2; i++)
+				if (lab_ID.find(seg[i]) != lab_ID.end())
+					end_pt[i] = lab_ID[seg[i]];
+				else
+					return;
+
+			int code[2] = { end_pt[0].pos_code ,end_pt[1].pos_code };
+			bool invalid = code[0] < 3 && (code[1] == code[0] || code[1] == code[0] + 3 || code[1] == (code[0] + 2) % 3 + 3);
+			invalid |= code[0] >= 3 && code[0] < 6 && (code[1] == code[0] || code[1] == code[0] - 3 || code[1] == (code[0] - 2) % 3);
+
+			if (code[0] == 6 || code[1] == 6||!invalid/*判断是否为内部边（incomplete）*/) {
+				G.AddEdge(ID[seg[0]], ID[seg[1]]);
+			}
+			});
+		//三角化
+		G.Trianglate();
+		//删除原面
+		S->faces.remove(element.first);
+		//添加新面
+		for_each(G.face_list.begin(), G.face_list.end(), [&](Face* f) {
+			if (f->inner_edge.size() != 0)
+				return;
+			Triangle new_T;
+			new_T[0] = inv_ID[f->outer_edge->start_point];
+			new_T[1] = inv_ID[f->outer_edge->next->start_point];
+			new_T[2] = inv_ID[f->outer_edge->next->next->start_point];
+
+			cout << new_T[0] << new_T[1] << new_T[2] << endl;
+
+			S->faces.push_back(new_T);
+			});
+		});
 }
