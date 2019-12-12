@@ -94,11 +94,11 @@ int main() {
 
 	}
 	if (mode == 3) {
-		//TriangleP T1(P3D(0, 0, 0), P3D(2, 1, 1), P3D(0, 2, 2));
-		//TriangleP T2(P3D(0, 0, 1), P3D(2, 1, 1), P3D(0, 2, 1));
+		TriangleP T1(P3D(0, 0, 0), P3D(2, 1, 1), P3D(0, 2, 2));
+		TriangleP T2(P3D(0, 0, 1), P3D(2, 1, 1), P3D(0, 2, 1));
 		//TriangleP T2(P3D(1,0, 4), P3D(1, 0, -1), P3D(1, 2, 1));
-		TriangleP T1(P3D(0.585859, 0.112148, 0.341697), P3D(0.592001, 0.49589, 0.989501), P3D(0.186895, 0.687677, 0.445077));
-		TriangleP T2(P3D(0.674663, 0.00481958, 0.745864), P3D(0.185482, 0.0560274, 0.711849), P3D(0.568723, 0.723776, 0.559884));
+		//TriangleP T1(P3D(0.585859, 0.112148, 0.341697), P3D(0.592001, 0.49589, 0.989501), P3D(0.186895, 0.687677, 0.445077));
+		//TriangleP T2(P3D(0.674663, 0.00481958, 0.745864), P3D(0.185482, 0.0560274, 0.711849), P3D(0.568723, 0.723776, 0.559884));
 		SegmentP intersection;
 		P2D uv[4];
 		int code[4];
@@ -109,6 +109,23 @@ int main() {
 		return 0;
 	}
 	if (mode == 4) {
+		TriangleP T1(P3D(0, 0, 0), P3D(2, 0, 0), P3D(1, 1, 1));
+		TriangleP T2(P3D(0, 0.5, 0.5), P3D(2, -1, 0), P3D(1, 1, -1));
+		TriangleP T3(P3D(0, 0, 0), P3D(2, 0, 0), P3D(1, -1, 1));
+		TriangleP T4(P3D(0, 0, 0), P3D(2, 0, 1), P3D(1, -1, -1));
+
+		vector<TriangleP> Tris;
+		Tris.push_back(T1);
+		Tris.push_back(T2);
+		Tris.push_back(T3);
+		Tris.push_back(T4);
+
+		SegInfo segs;
+		FindIntersection(Tris, segs);
+
+		return 0;
+	}
+	if (mode == 5) {
 		Surface S;
 		S.LoadFromFile("ar3k.obj");
 		for (int i = 0; i < 21; i++) {
@@ -121,12 +138,12 @@ int main() {
 		}
 		/*cout << S.Postion(P3D(1, 0.6, 0.6)) << " ";*/
 	}
-	if (mode == 5) {
+	if (mode == 6) {
 		Surface S;
 		S.LoadFromFile("ar3k.obj");
 		cout << S.Vol() << endl;
 	}
-	if (mode == 6) {
+	if (mode == 7) {
 		Surface S;
 		S.LoadFromFile("data.obj");
 		Path P;

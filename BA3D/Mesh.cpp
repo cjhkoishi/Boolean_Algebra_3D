@@ -387,8 +387,9 @@ bool TriangleP::intersect(
 			ADD(vert[i]);
 		}
 	}
+
 	if (Norm().cross(sub.Norm()).norm() == 0)
-		return false;
+		return k == 2;
 	//¼ì²â±ß
 	for (int i = 0; i < 3; i++) {
 		SegmentP line(sub.vert[i], sub.vert[(i + 1) % 3]);
@@ -411,6 +412,14 @@ bool TriangleP::intersect(
 		rs[0] = t_uv;
 		tri_pos_code[0] = 3 + i;
 		ADD(pt);
+	}
+
+	if (!LESS(intersection.vert[0], intersection.vert[1])) {
+		swap(intersection.vert[0], intersection.vert[1]);
+		swap(uv[0], uv[2]);
+		swap(uv[1], uv[3]);
+		swap(code[0], code[2]);
+		swap(code[1], code[3]);
 	}
 
 	if (k != 2)
@@ -560,7 +569,50 @@ void Path::Triangulate()
 
 }
 
-void FindIntersection(vector<TriangleP> Ts, list<SegInfo>& intersections)
+void FindIntersection(vector<TriangleP> Ts, SegInfo& intersections)
 {
 	intersections.clear();
+	for (int i = 0; i < Ts.size(); i++)
+		for (int j = i + 1; j < Ts.size(); j++) {
+			P2D uv[4];
+			SegmentP seg;
+			int code[4];
+			bool res = Ts[i].intersect(Ts[j], seg, uv, code);
+			if (res) {
+				intersections[seg][i] = SOF(uv[0], uv[2], code[0], code[2]);
+				intersections[seg][j] = SOF(uv[1], uv[3], code[1], code[3]);
+			}
+		}
+
+	cout << "Graphics3D[{";
+	bool _1 = false;
+	for_each(Ts.begin(), Ts.end(), [&](TriangleP& element) {
+		if (_1) {
+			cout << ',';
+		}
+		cout << "Triangle[{{"
+			<< element.vert[0].coor[0] << ","
+			<< element.vert[0].coor[1] << ","
+			<< element.vert[0].coor[2] << "},{"
+			<< element.vert[1].coor[0] << ","
+			<< element.vert[1].coor[1] << ","
+			<< element.vert[1].coor[2] << "},{"
+			<< element.vert[2].coor[0] << ","
+			<< element.vert[2].coor[1] << ","
+			<< element.vert[2].coor[2] << "}}]";
+
+		_1 = true;
+		});
+	for_each(intersections.begin(), intersections.end(), [&](auto& element) {
+		cout << ',';
+		cout << "{Dashed,Thick,Line[{{";
+		cout << element.first.vert[0].coor[0] << ","
+			<< element.first.vert[0].coor[1] << ","
+			<< element.first.vert[0].coor[2] << "},{"
+			<< element.first.vert[1].coor[0] << ","
+			<< element.first.vert[1].coor[1] << ","
+			<< element.first.vert[1].coor[2] << "}";
+		cout << "}]}";
+		});
+	cout << "}]" << endl;
 }
