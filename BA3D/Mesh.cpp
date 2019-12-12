@@ -206,19 +206,20 @@ double SegmentP::Dist(P3D p)
 	return line_dist;
 }
 
-bool SegmentP::OnDetect(P3D p)
+int SegmentP::OnDetect(P3D p)
 {
-	if (p == vert[0] || p == vert[1])
-		return true;
+	for (int i = 0; i < 2; i++)
+		if (p == vert[i])
+			return i;
 	P3D p0 = p - vert[0];
 	P3D p1 = p - vert[1];
 	P3D R = vert[1] - vert[0];
 	bool test1 = p0 * R > 0;
 	bool test2 = p1 * R < 0;
 	if (Dist(p) < EPSILON && test1 && test2) {
-		return true;
+		return 2;
 	}
-	return false;
+	return -1;
 }
 
 SegmentP::SegmentP()
@@ -246,13 +247,25 @@ double TriangleP::Dist(P3D p)
 	double vol = det(D, C1, C2);
 	double factor = C1.cross(C2).norm();
 	double res = vol / factor;
-	return res;
+	return abs(res);
 }
 
 int TriangleP::OnDetect(P3D p)
 {
 	if (Dist(p) >= EPSILON)
 		return -1;
+
+	for (int i = 0; i < 3; i++) {
+		SegmentP S(vert[i], vert[(i + 1) % 3]);
+		int r = S.OnDetect(p);
+		if (r == -1)
+			continue;
+		else if (r == 0 || r == 1)
+			return (i + r) % 3;
+		else if (r == 2)
+			return 3 + i;
+	}
+
 	P3D n = Norm();
 	bool flag = true;
 	for (int i = 0; i < 3; i++) {
@@ -264,15 +277,9 @@ int TriangleP::OnDetect(P3D p)
 		}
 	}
 	if (flag)
-		return true;
-
-	for (int i = 0; i < 3; i++) {
-		SegmentP S(vert[i], vert[(i + 1) % 3]);
-		if (S.OnDetect(p))
-			return true;
-	}
-
-	return false;
+		return 6;
+	else
+		return -1;
 }
 
 bool TriangleP::intersect(
@@ -303,51 +310,128 @@ bool TriangleP::intersect(
 	r = E1 * P / -t0;
 	s = E2 * P / -t0;
 
-	bool flag = true;
-	for (int i = 0; i < 3; i++)
-		if (flag && vert[i] == intersection)
-		{
-			tri_pos_code = i;
-			flag = false;
-		}
 
-	for (int i = 0; i < 3; i++)
-		if (flag && SegmentP(vert[i], vert[(i + 1) % 3]).OnDetect(intersection))
-		{
-			tri_pos_code = i + 3;
-			flag = false;
-		}
+	int code = OnDetect(intersection);
+	bool flag = code == -1 || code == 6;
 	if (flag && r >= 0 && s >= 0 && r + s <= 1)
 		tri_pos_code = 6;
+	else
+		tri_pos_code = code;
 
-	flag = true;
-	for (int i = 0; i < 2; i++)
-		if (flag && ray.vert[i] == intersection)
-		{
-			seg_pos_code = i;
-			flag = false;
-		}
 
+	code = ray.OnDetect(intersection);
+	flag = code == -1 || code == 2;
 	if (flag && t >= 0 && t <= 1)
 		seg_pos_code = 2;
+	else
+		seg_pos_code = code;
 
 	return true;
 }
 
 bool TriangleP::intersect(
 	TriangleP sub,
-	SegmentP& intersection, 
-	P2D uv[4], 
+	SegmentP& intersection,
+	P2D uv[4],
 	int code[4])
 {
-	double r, s, t;
-	int tri_pos_code, seg_pos_code;
+	P2D rs[2];
+	double t;
+	int tri_pos_code[2], seg_pos_code;
 	int k = 0;
-	//¼ì²â¶¥µãÊÇ·ñÔÚÈý½ÇÃæÉÏ
+	auto ADD = [&](P3D& p) {
+		if (k == 0) {
+			intersection.vert[0] = p;
+			uv[0] = rs[0];
+			uv[1] = rs[1];
+			code[0] = tri_pos_code[0];
+			code[1] = tri_pos_code[1];
+			k++;
+		}
+		else if (k == 1) {
+			if (intersection.vert[0] == p)
+				return;
+			intersection.vert[1] = p;
+			uv[2] = rs[0];
+			uv[3] = rs[1];
+			code[2] = tri_pos_code[0];
+			code[3] = tri_pos_code[1];
+			k++;
+		}
+		else if (!(intersection.vert[0] == p) && !(intersection.vert[1] == p)) {
+			cout << "error occurs in TRIANGLE_INTERSECT because three or more endpoints are detected" << endl;
+		}
+	};
+
+	//¼ì²â¶¥µã
+	P2D vert_uv[3] = { P2D(0,0),P2D(1,0),P2D(0,1) };
 	for (int i = 0; i < 3; i++) {
-		
+		int d_code = OnDetect(sub.vert[i]);
+		if (d_code != -1) {
+			P2D res_uv = AffineCoor(sub.vert[i]);
+			rs[0] = res_uv;
+			rs[1] = vert_uv[i];
+			tri_pos_code[0] = d_code;
+			tri_pos_code[1] = i;
+			ADD(sub.vert[i]);
+		}
 	}
-	return false;
+	for (int i = 0; i < 3; i++) {
+		int d_code = sub.OnDetect(vert[i]);
+		if (d_code != -1) {
+			P2D res_uv = sub.AffineCoor(vert[i]);
+			rs[0] = res_uv;
+			rs[1] = vert_uv[i];
+			tri_pos_code[1] = d_code;
+			tri_pos_code[0] = i;
+			ADD(vert[i]);
+		}
+	}
+	if (Norm().cross(sub.Norm()).norm() == 0)
+		return false;
+	//¼ì²â±ß
+	for (int i = 0; i < 3; i++) {
+		SegmentP line(sub.vert[i], sub.vert[(i + 1) % 3]);
+		P3D pt;
+		bool res = intersect(line, pt, rs[0].coor[0], rs[0].coor[1], t, tri_pos_code[0], seg_pos_code);
+		if (tri_pos_code[0] == -1 || seg_pos_code != 2)
+			continue;
+		P2D t_uv = t * vert_uv[(i + 1) % 3] + (1 - t) * vert_uv[i];
+		rs[1] = t_uv;
+		tri_pos_code[1] = 3 + i;
+		ADD(pt);
+	}
+	for (int i = 0; i < 3; i++) {
+		SegmentP line(vert[i], vert[(i + 1) % 3]);
+		P3D pt;
+		bool res = sub.intersect(line, pt, rs[1].coor[0], rs[1].coor[1], t, tri_pos_code[1], seg_pos_code);
+		if (tri_pos_code[1] == -1 || seg_pos_code != 2)
+			continue;
+		P2D t_uv = t * vert_uv[(i + 1) % 3] + (1 - t) * vert_uv[i];
+		rs[0] = t_uv;
+		tri_pos_code[0] = 3 + i;
+		ADD(pt);
+	}
+
+	if (k != 2)
+		return false;
+	else
+		return true;
+}
+
+P2D TriangleP::AffineCoor(P3D p)
+{
+	P3D X = vert[1] - vert[0];
+	P3D Y = vert[2] - vert[0];
+	double xx = X * X;
+	double xy = X * Y;
+	double yy = Y * Y;
+	double xp = X * p;
+	double yp = Y * p;
+	double cm = xx * yy - xy * xy;
+	double um = xp * yy - yp * xy;
+	double vm = xx * yp - xp * xy;
+	return P2D(um / cm, vm / cm);
 }
 
 TriangleP::TriangleP()

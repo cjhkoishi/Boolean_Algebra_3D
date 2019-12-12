@@ -82,7 +82,8 @@ int main() {
 	}
 	if (mode == 2) {
 		TriangleP T(P3D(0, 0, 0), P3D(2, 1, 1), P3D(0, 2, 2));
-		SegmentP L(P3D(0, 2, 0), P3D(0, 2, -2));
+
+		SegmentP L(P3D(1, 0.5, 0.5), P3D(1, 1, -2));
 		P3D I(0, 0, 0);
 		double r, s, t;
 		int tc, sc;
@@ -93,22 +94,18 @@ int main() {
 
 	}
 	if (mode == 3) {
-		SurfaceWithPath MC;
-		MC.LoadFromFile("data.obj");
-		Segment s;
-		s[0] = 0;
-		s[1] = 1;
-		MC.cell.push_back(s);
-		s[0] = 1;
-		s[1] = 2;
-		MC.cell.push_back(s);
-		s[0] = 2;
-		s[1] = 0;
-		MC.cell.push_back(s);
-		vector<Surface> res;
-		MC.Cutting(res);
-		res[0].WriteToFile("data0.obj");
-		res[1].WriteToFile("data1.obj");
+		//TriangleP T1(P3D(0, 0, 0), P3D(2, 1, 1), P3D(0, 2, 2));
+		//TriangleP T2(P3D(0, 0, 1), P3D(2, 1, 1), P3D(0, 2, 1));
+		//TriangleP T2(P3D(1,0, 4), P3D(1, 0, -1), P3D(1, 2, 1));
+		TriangleP T1(P3D(0.585859, 0.112148, 0.341697), P3D(0.592001, 0.49589, 0.989501), P3D(0.186895, 0.687677, 0.445077));
+		TriangleP T2(P3D(0.674663, 0.00481958, 0.745864), P3D(0.185482, 0.0560274, 0.711849), P3D(0.568723, 0.723776, 0.559884));
+		SegmentP intersection;
+		P2D uv[4];
+		int code[4];
+
+		T1.intersect(T2, intersection, uv, code);
+
+
 		return 0;
 	}
 	if (mode == 4) {
@@ -135,7 +132,7 @@ int main() {
 		Path P;
 		P.S = &S;
 		Path::PointInfo pi;
-		Path::PointInfo::Label lab(Triangle(),P2D(0,0),0,0);
+		Path::PointInfo::Label lab(Triangle(), P2D(0, 0), 0, 0);
 
 		pi.point = P3D(0, 1, 0);
 		pi.pos_code = 2;
@@ -143,7 +140,7 @@ int main() {
 		lab.tri[1] = 0;
 		lab.tri[2] = 2;
 		lab.belong_ID = 4;
-		lab.uv = P2D(0.25,0.25);
+		lab.uv = P2D(0.25, 0.25);
 		lab.pos_code = 6;
 		pi.labels.push_back(lab);
 		P.new_points[4] = pi;

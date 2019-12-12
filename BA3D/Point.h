@@ -2,7 +2,7 @@
 #include<math.h>
 #include<algorithm>
 constexpr auto PI = 3.141592653589793116;
-constexpr auto EPSILON = 1e-10;
+constexpr auto EPSILON = 1e-8;
 
 
 template<int n>

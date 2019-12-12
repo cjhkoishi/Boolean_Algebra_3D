@@ -7,7 +7,7 @@ public:
 	P3D vert[2];
 
 	double Dist(P3D p);
-	bool OnDetect(P3D p);
+	int OnDetect(P3D p);
 
 	SegmentP();
 	SegmentP(P3D P, P3D Q);
@@ -29,6 +29,7 @@ public:
 	*/
 	bool intersect(SegmentP ray, P3D& intersection, double& r, double& s, double& t, int& tri_pos_code, int& seg_pos_code);
 	bool intersect(TriangleP sub, SegmentP& intersection,P2D uv[4],int code[4]);
+	P2D AffineCoor(P3D p);
 
 	TriangleP();
 	TriangleP(P3D P, P3D Q, P3D R);
