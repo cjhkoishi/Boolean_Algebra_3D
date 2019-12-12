@@ -43,14 +43,14 @@ public:
 		return res;
 	}
 
-	double norm(){
+	double norm() {
 		return sqrt((*this) * (*this));
 	}
 
 	bool operator==(const Point<n>& rhs)const {
 		auto p1 = *this;
 		auto p2 = rhs;
-		return (p1-p2).norm()<EPSILON;
+		return (p1 - p2).norm() < EPSILON;
 	}
 
 	Point()
@@ -135,8 +135,9 @@ public:
 	bool operator()(const P3D& p1, const P3D& p2)const {
 		bool res = false;
 		for (int i = 2; i >= 0; i--)
-			if (p1.coor[i] != p2.coor[i]) {
+			if (abs(p1.coor[i] - p2.coor[i]) >= EPSILON) {
 				res = p1.coor[i] < p2.coor[i];
+				break;
 			}
 		res &= !(p1 == p2);
 		return res;

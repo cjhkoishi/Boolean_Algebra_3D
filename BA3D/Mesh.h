@@ -64,13 +64,17 @@ public:
 	list<Triangle> faces;
 
 	void Cutting(vector<Segment> segs, vector<Surface>& result);
-	void Pasting(vector<Surface>& pieces);
+	void Pasting(vector<Surface> pieces);
 	void LoadFromFile(string filename);
 	void WriteToFile(string filename);
 	void ElimitateUnusedPoint();
 	int Postion(P3D p);
 	double Vol();
 	bool Orientation();
+	int MaxIndex();
+	void Intersect(Surface sub,SegInfo& SI1,SegInfo& SI2);
+
+	Surface meet(Surface sub);
 
 	Surface();
 	~Surface();
@@ -104,4 +108,6 @@ public:
 
 	void Triangulate();
 
+	Path() {};
+	Path(Surface S,SegInfo SI);
 };

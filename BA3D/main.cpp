@@ -109,20 +109,63 @@ int main() {
 		return 0;
 	}
 	if (mode == 4) {
-		TriangleP T1(P3D(0, 0, 0), P3D(2, 0, 0), P3D(1, 1, 1));
-		TriangleP T2(P3D(0, 0.5, 0.5), P3D(2, -1, 0), P3D(1, 1, -1));
-		TriangleP T3(P3D(0, 0, 0), P3D(2, 0, 0), P3D(1, -1, 1));
-		TriangleP T4(P3D(0, 0, 0), P3D(2, 0, 1), P3D(1, -1, -1));
+		TriangleP T1(P3D(0, 0, 0), P3D(2, 0, 0), P3D(1, 2, 0));
+		TriangleP T2(P3D(0, 0, 0), P3D(2, 0, 0), P3D(1, 1, 2));
+		TriangleP T3(P3D(1, 2, 0), P3D(2, 0, 0), P3D(1, 1, 2));
+		TriangleP T4(P3D(0, 0, 0), P3D(1, 2, 0), P3D(1, 1, 2));
+		TriangleP T5(P3D(0, 0, 1), P3D(0, 2, 1), P3D(2, 0, 1));
+		TriangleP T6(P3D(2, 2, 1), P3D(0, 2, 1), P3D(2, 0, 1));
 
 		vector<TriangleP> Tris;
 		Tris.push_back(T1);
 		Tris.push_back(T2);
 		Tris.push_back(T3);
 		Tris.push_back(T4);
-
+		Tris.push_back(T5);
+		Tris.push_back(T6);
 		SegInfo segs;
 		FindIntersection(Tris, segs);
 
+		return 0;
+	}
+	if (mode == 10) {
+		Surface S1, S2;
+		vector<TriangleP> Tris;
+		SegInfo segs1,segs2;
+		S1.LoadFromFile("model.obj");
+		S2.LoadFromFile("ICO.obj");
+
+		/*for_each(S1.faces.begin(), S1.faces.end(), [&](Triangle& T) {
+			TriangleP TP;
+			double sca = 2.2;
+			TP.vert[0] = sca * S1.vertices[T[0]];
+			TP.vert[1] = sca * S1.vertices[T[1]];
+			TP.vert[2] = sca * S1.vertices[T[2]];
+			Tris.push_back(TP);
+			});
+		for_each(S2.faces.begin(), S2.faces.end(), [&](Triangle& T) {
+			TriangleP TP;
+			TP.vert[0] = S2.vertices[T[0]];
+			TP.vert[1] = S2.vertices[T[1]];
+			TP.vert[2] = S2.vertices[T[2]];
+			Tris.push_back(TP);
+			});
+		FindIntersection(Tris, segs);
+		S1.Intersect(S2,segs1,segs2);
+		Path P1(S2,segs2);
+		P1.Triangulate();
+		P1.S->WriteToFile("res.obj");
+		vector<Surface> res;
+		P1.S->Cutting(P1.segs, res);
+
+		int index=0;
+		for_each(res.begin(), res.end(), [&](Surface& element) {
+			stringstream ss("res");
+			ss << index++ << ".obj";
+			element.WriteToFile(ss.str());
+			});*/
+		Surface S3 = S1.meet(S2);
+		S3.WriteToFile("res.obj");
 		return 0;
 	}
 	if (mode == 5) {
@@ -142,6 +185,9 @@ int main() {
 		Surface S;
 		S.LoadFromFile("ar3k.obj");
 		cout << S.Vol() << endl;
+		P3D p1(1e-10, 1e-10, 1e-10);
+		P3D p2(0,0,0);
+		cout << (p1 == p2) << endl;
 	}
 	if (mode == 7) {
 		Surface S;
@@ -295,6 +341,10 @@ int main() {
 
 		res[0].WriteToFile("res0.obj");
 		res[1].WriteToFile("res1.obj");
+
+		Surface nn;
+		nn.Pasting(res);
+		nn.WriteToFile("Past.obj");
 	}
 	if (mode == 111) {
 		DCEL G;

@@ -66,9 +66,41 @@ void Surface::Cutting(vector<Segment> segs, vector<Surface>& result)
 	for_each(result.begin(), result.end(), [&](Surface& M) {M.ElimitateUnusedPoint(); });
 }
 
-void Surface::Pasting(vector<Surface>& pieces)
+void Surface::Pasting(vector<Surface> pieces)
 {
+	faces.clear();
+	vertices.clear();
+	vector<int> offsets;
+	offsets.resize(pieces.size());
+	offsets[0] = 0;
+	for (int i = 1; i < offsets.size(); i++) {
+		offsets[i] = pieces[i - 1].MaxIndex() + 1;
+	}
+	for (int i = 0; i < offsets.size() - 1; i++) {
+		offsets[i + 1] = offsets[i] + offsets[i + 1];
+	}
+	map<int, int> index_map;
+	map<P3D, int, comparator> pool;
 
+	int o = 0;
+	for (auto i = pieces.begin(); i != pieces.end(); i++) {
+		for (auto j = i->vertices.begin(); j != i->vertices.end(); j++) {
+			if (pool.find(j->second) != pool.end())
+				index_map[j->first + offsets[o]] = pool[j->second];
+			else {
+				index_map[j->first + offsets[o]] = j->first + offsets[o];
+				pool[j->second] = j->first + offsets[o];
+				vertices[j->first + offsets[o]] = j->second;
+			}
+		}
+		for (auto j = i->faces.begin(); j != i->faces.end(); j++) {
+			(*j)[0] = index_map[(*j)[0] + offsets[o]];
+			(*j)[1] = index_map[(*j)[1] + offsets[o]];
+			(*j)[2] = index_map[(*j)[2] + offsets[o]];
+			faces.push_back(*j);
+		}
+		o++;
+	}
 }
 
 void Surface::LoadFromFile(string filename)
@@ -80,7 +112,7 @@ void Surface::LoadFromFile(string filename)
 	int v = 0;
 	while (getline(fin, str)) {
 		stringstream ss(str);
-		char c;
+		char c = 0;
 		ss >> c;
 		if (c == 'v') {
 			double x, y, z;
@@ -188,6 +220,98 @@ double Surface::Vol()
 bool Surface::Orientation()
 {
 	return Vol() > 0;
+}
+
+int Surface::MaxIndex()
+{
+	int m = 0;
+	for_each(vertices.begin(), vertices.end(), [&](auto& element) {
+		if (element.first > m)
+			m = element.first;
+		});
+	return m;
+}
+
+void Surface::Intersect(Surface sub, SegInfo& SI1, SegInfo& SI2)
+{
+	SegInfo SI;
+	vector<TriangleP> Tris;
+	int offset = faces.size();
+	for_each(faces.begin(), faces.end(), [&](Triangle& element) {
+		TriangleP TP;
+		TP.vert[0] = vertices[element[0]];
+		TP.vert[1] = vertices[element[1]];
+		TP.vert[2] = vertices[element[2]];
+		Tris.push_back(TP);
+		});
+	for_each(sub.faces.begin(), sub.faces.end(), [&](Triangle& element) {
+		TriangleP TP;
+		TP.vert[0] = sub.vertices[element[0]];
+		TP.vert[1] = sub.vertices[element[1]];
+		TP.vert[2] = sub.vertices[element[2]];
+
+		Tris.push_back(TP);
+		});
+
+	FindIntersection(Tris, SI);
+
+	for_each(SI.begin(), SI.end(), [&](pair<const SegmentP, map<int, SOF>>& element) {
+		//排除平凡交线
+		if (element.second.size() <= 2)
+		{
+			bool flag = true;
+			for_each(element.second.begin(), element.second.end(), [&](pair<const int, SOF>& sof) {
+				SOF S = sof.second;
+				if (S.code[0] >= 3 || S.code[1] >= 3)
+					flag = false;
+				});
+			if (flag)
+				return;
+		}
+		//分类
+		for_each(element.second.begin(), element.second.end(), [&](pair<const int, SOF>& sof) {
+			SOF S = sof.second;
+			int index = sof.first;
+			if (index < offset)
+				SI1[element.first][index] = S;
+			else
+				SI2[element.first][index - offset] = S;
+			});
+		});
+}
+
+Surface Surface::meet(Surface sub)
+{
+	Surface res;
+	vector<Surface> pieces[3];
+	SegInfo SI[2];
+
+	Intersect(sub, SI[0], SI[1]);
+	Path P[2] = { Path(*this,SI[0]),Path(sub,SI[1]) };
+	P[0].Triangulate();
+	P[1].Triangulate();
+
+	P[0].S->Cutting(P[0].segs, pieces[0]);
+	P[1].S->Cutting(P[1].segs, pieces[1]);
+
+	///初步选择
+	for (auto i = pieces[1].begin(); i != pieces[1].end(); i++) {
+		Triangle T0 = *i->faces.begin();
+		TriangleP TP0(i->vertices[T0[0]], i->vertices[T0[1]], i->vertices[T0[2]]);
+		P3D test_p = (1.0 / 3) * (TP0.vert[0] + TP0.vert[1] + TP0.vert[2]);
+		if (Postion(test_p) == 0)
+			pieces[2].push_back(*i);
+	};
+	for (auto i = pieces[0].begin(); i != pieces[0].end(); i++) {
+		Triangle T0 = *i->faces.begin();
+		TriangleP TP0(i->vertices[T0[0]], i->vertices[T0[1]], i->vertices[T0[2]]);
+		P3D test_p = (1.0 / 3) * (TP0.vert[0] + TP0.vert[1] + TP0.vert[2]);
+		if (sub.Postion(test_p) == 0)
+			pieces[2].push_back(*i);
+	};
+
+	res.Pasting(pieces[2]);
+	return res;
 }
 
 Surface::Surface()
@@ -569,6 +693,57 @@ void Path::Triangulate()
 
 }
 
+Path::Path(Surface S, SegInfo SI)
+{
+	this->S = new Surface(S);
+	int m = S.MaxIndex() + 1;
+	map<P3D, int, comparator> pool;
+	for_each(SI.begin(), SI.end(), [&](pair<const SegmentP, map<int, SOF>>& element) {
+		if (pool.find(element.first.vert[0]) == pool.end())
+			pool[element.first.vert[0]] = m++;
+		if (pool.find(element.first.vert[1]) == pool.end())
+			pool[element.first.vert[1]] = m++;
+		new_points[pool[element.first.vert[0]]].point = element.first.vert[0];
+		new_points[pool[element.first.vert[1]]].point = element.first.vert[1];
+
+		for_each(element.second.begin(), element.second.end(), [&](pair<const int, SOF>& sof) {
+			PointInfo::Label lab;
+
+			auto d = S.faces.begin();
+			for (int i = 0; i < sof.first; i++)
+				d++;
+			lab.tri = *d;
+
+			lab.belong_ID = pool[element.first.vert[0]];
+			lab.pos_code = sof.second.code[0];
+			lab.uv = sof.second.uv[0];
+			if (lab.pos_code != 6 || lab.pos_code == 6 && new_points[pool[element.first.vert[0]]].labels.size() == 0)
+				new_points[pool[element.first.vert[0]]].labels.push_back(lab);
+			lab.belong_ID = pool[element.first.vert[1]];
+			lab.pos_code = sof.second.code[1];
+			lab.uv = sof.second.uv[1];
+			if (lab.pos_code != 6 || lab.pos_code == 6 && new_points[pool[element.first.vert[1]]].labels.size() == 0)
+				new_points[pool[element.first.vert[1]]].labels.push_back(lab);
+
+			});
+
+		new_points[pool[element.first.vert[0]]].pos_code = new_points[pool[element.first.vert[0]]].labels.begin()->pos_code / 3;
+		new_points[pool[element.first.vert[1]]].pos_code = new_points[pool[element.first.vert[1]]].labels.begin()->pos_code / 3;
+
+		Segment line;
+		line[0] = pool[element.first.vert[0]];
+		line[1] = pool[element.first.vert[1]];
+		segs.push_back(line);
+		});
+
+	cout.precision(16);
+	for_each(pool.begin(), pool.end(), [&](auto& element) {
+
+		cout << element.first.coor[0] << " " << element.first.coor[1] << " " << element.first.coor[2] << endl;
+		});
+	return;
+}
+
 void FindIntersection(vector<TriangleP> Ts, SegInfo& intersections)
 {
 	intersections.clear();
@@ -590,7 +765,7 @@ void FindIntersection(vector<TriangleP> Ts, SegInfo& intersections)
 		if (_1) {
 			cout << ',';
 		}
-		cout << "Triangle[{{"
+		cout << "{EdgeForm[],Triangle[{{"
 			<< element.vert[0].coor[0] << ","
 			<< element.vert[0].coor[1] << ","
 			<< element.vert[0].coor[2] << "},{"
@@ -599,11 +774,22 @@ void FindIntersection(vector<TriangleP> Ts, SegInfo& intersections)
 			<< element.vert[1].coor[2] << "},{"
 			<< element.vert[2].coor[0] << ","
 			<< element.vert[2].coor[1] << ","
-			<< element.vert[2].coor[2] << "}}]";
+			<< element.vert[2].coor[2] << "}}]}";
 
 		_1 = true;
 		});
 	for_each(intersections.begin(), intersections.end(), [&](auto& element) {
+		if (element.second.size() <= 2)
+		{
+			bool flag = true;
+			for_each(element.second.begin(), element.second.end(), [&](pair<const int, SOF>& sof) {
+				SOF S = sof.second;
+				if (S.code[0] >= 3 || S.code[1] >= 3)
+					flag = false;
+				});
+			if (flag)
+				return;
+		}
 		cout << ',';
 		cout << "{Dashed,Thick,Line[{{";
 		cout << element.first.vert[0].coor[0] << ","
