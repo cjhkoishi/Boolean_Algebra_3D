@@ -2,8 +2,73 @@
 #include"UnionFind.h"
 #include <iostream>
 
-void Surface::TriangletionForCell(vector<FaceInfo> info)
+
+
+void Surface::Cutting(vector<Segment> segs, vector<Surface>& result)
 {
+	UnionFind com;
+	vector<Triangle> vec_faces;
+	map<int, vector<int>> neighbor;
+	for (int i = 0; i < faces.size(); i++) {
+		com.Add(i);
+	}
+
+	for_each(segs.begin(), segs.end(), [&](Segment& s) {s.sort(); });
+
+	vec_faces.assign(faces.begin(), faces.end());
+
+	for (int i = 0; i < vec_faces.size(); i++) {
+		set<Segment> origin_detector;
+		Triangle T = vec_faces[i];
+		Segment S[3];
+		S[0][0] = S[2][1] = T[0];
+		S[1][0] = S[0][1] = T[1];
+		S[2][0] = S[1][1] = T[2];
+		S[0].sort();
+		S[1].sort();
+		S[2].sort();
+		origin_detector.insert(S[0]);
+		origin_detector.insert(S[1]);
+		origin_detector.insert(S[2]);
+		for (int j = 0; j < vec_faces.size(); j++) {
+			if (i == j)
+				continue;
+			auto detector = origin_detector;
+			T = vec_faces[j];
+			S[0][0] = S[2][1] = T[0];
+			S[1][0] = S[0][1] = T[1];
+			S[2][0] = S[1][1] = T[2];
+			S[0].sort();
+			S[1].sort();
+			S[2].sort();
+			for (int c = 0; c < 3; c++) {
+				if (!detector.insert(S[c]).second) {
+					bool isCut = find(segs.begin(), segs.end(), S[c]) != segs.end();
+					if (isCut)
+						break;
+					com.Union(i, j);
+				}
+			}
+		}
+	}
+	result.resize(com.ComponentsNum());
+	for_each(result.begin(), result.end(), [&](Surface& M) {M.vertices = vertices; M.faces.clear(); });
+	map<int, int> index;
+	int k = 0;
+	for (int i = 0; i < vec_faces.size(); i++) {
+		if (index.find(com.Find(i)) == index.end()) {
+			index[com.Find(i)] = k;
+			k++;
+		}
+		Surface& M = result[index[com.Find(i)]];
+		M.faces.push_back(vec_faces[i]);
+	}
+	for_each(result.begin(), result.end(), [&](Surface& M) {M.ElimitateUnusedPoint(); });
+}
+
+void Surface::Pasting(vector<Surface>& pieces)
+{
+
 }
 
 void Surface::LoadFromFile(string filename)
@@ -184,10 +249,10 @@ double TriangleP::Dist(P3D p)
 	return res;
 }
 
-bool TriangleP::OnDetect(P3D p)
+int TriangleP::OnDetect(P3D p)
 {
 	if (Dist(p) >= EPSILON)
-		return false;
+		return -1;
 	P3D n = Norm();
 	bool flag = true;
 	for (int i = 0; i < 3; i++) {
@@ -271,15 +336,17 @@ bool TriangleP::intersect(
 
 bool TriangleP::intersect(
 	TriangleP sub,
-	SegmentP intersection,
-	double& u0,
-	double& v0,
-	double& u1,
-	double& v1,
-	int& code1,
-	int& code2)
+	SegmentP& intersection, 
+	P2D uv[4], 
+	int code[4])
 {
-
+	double r, s, t;
+	int tri_pos_code, seg_pos_code;
+	int k = 0;
+	//检测顶点是否在三角面上
+	for (int i = 0; i < 3; i++) {
+		
+	}
 	return false;
 }
 
@@ -294,68 +361,6 @@ TriangleP::TriangleP(P3D P, P3D Q, P3D R)
 	vert[2] = R;
 }
 
-void MeshWithCell::Cutting(vector<Surface>& result)
-{
-	UnionFind com;
-	vector<Triangle> vec_faces;
-	map<int, vector<int>> neighbor;
-	for (int i = 0; i < faces.size(); i++) {
-		com.Add(i);
-	}
-
-	for_each(cell.begin(), cell.end(), [&](Segment& s) {s.sort(); });
-
-	vec_faces.assign(faces.begin(), faces.end());
-
-	for (int i = 0; i < vec_faces.size(); i++) {
-		set<Segment> origin_detector;
-		Triangle T = vec_faces[i];
-		Segment S[3];
-		S[0][0] = S[2][1] = T[0];
-		S[1][0] = S[0][1] = T[1];
-		S[2][0] = S[1][1] = T[2];
-		S[0].sort();
-		S[1].sort();
-		S[2].sort();
-		origin_detector.insert(S[0]);
-		origin_detector.insert(S[1]);
-		origin_detector.insert(S[2]);
-		for (int j = 0; j < vec_faces.size(); j++) {
-			if (i == j)
-				continue;
-			auto detector = origin_detector;
-			T = vec_faces[j];
-			S[0][0] = S[2][1] = T[0];
-			S[1][0] = S[0][1] = T[1];
-			S[2][0] = S[1][1] = T[2];
-			S[0].sort();
-			S[1].sort();
-			S[2].sort();
-			for (int c = 0; c < 3; c++) {
-				if (!detector.insert(S[c]).second) {
-					bool isCut = find(cell.begin(), cell.end(), S[c]) != cell.end();
-					if (isCut)
-						break;
-					com.Union(i, j);
-				}
-			}
-		}
-	}
-	result.resize(com.ComponentsNum());
-	for_each(result.begin(), result.end(), [&](Surface& M) {M.vertices = vertices; M.faces.clear(); });
-	map<int, int> index;
-	int k = 0;
-	for (int i = 0; i < vec_faces.size(); i++) {
-		if (index.find(com.Find(i)) == index.end()) {
-			index[com.Find(i)] = k;
-			k++;
-		}
-		Surface& M = result[index[com.Find(i)]];
-		M.faces.push_back(vec_faces[i]);
-	}
-	for_each(result.begin(), result.end(), [&](Surface& M) {M.ElimitateUnusedPoint(); });
-}
-
 void Path::Triangulate()
 {
 	//add new points into the mesh except those which is on the old vertex
@@ -363,6 +368,9 @@ void Path::Triangulate()
 	for_each(new_points.begin(), new_points.end(), [&](pair<int, PointInfo> element) {
 		if (element.second.pos_code >= 1)
 			S->vertices[element.first] = element.second.point;
+		else {
+			cout << "there is a point with code 0." << endl;
+		}
 		auto labs = element.second.labels;
 		for_each(labs.begin(), labs.end(), [&](PointInfo::Label& lab) {
 			labels[lab.tri].push_back(lab);
@@ -443,7 +451,7 @@ void Path::Triangulate()
 			bool invalid = code[0] < 3 && (code[1] == code[0] || code[1] == code[0] + 3 || code[1] == (code[0] + 2) % 3 + 3);
 			invalid |= code[0] >= 3 && code[0] < 6 && (code[1] == code[0] || code[1] == code[0] - 3 || code[1] == (code[0] - 2) % 3);
 
-			if (code[0] == 6 || code[1] == 6||!invalid/*判断是否为内部边（incomplete）*/) {
+			if (code[0] == 6 || code[1] == 6 || !invalid/*判断是否为内部边（incomplete）*/) {
 				G.AddEdge(ID[seg[0]], ID[seg[1]]);
 			}
 			});
@@ -465,4 +473,10 @@ void Path::Triangulate()
 			S->faces.push_back(new_T);
 			});
 		});
+
+}
+
+void FindIntersection(vector<TriangleP> Ts, list<SegInfo>& intersections)
+{
+	intersections.clear();
 }

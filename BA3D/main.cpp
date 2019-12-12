@@ -93,7 +93,7 @@ int main() {
 
 	}
 	if (mode == 3) {
-		MeshWithCell MC;
+		SurfaceWithPath MC;
 		MC.LoadFromFile("data.obj");
 		Segment s;
 		s[0] = 0;
@@ -230,6 +230,25 @@ int main() {
 		P.new_points[9] = pi;
 		pi.labels.clear();
 
+		pi.point = P3D(-0.5, 1, 0);
+		pi.pos_code = 1;
+		lab.tri[0] = 1;
+		lab.tri[1] = 0;
+		lab.tri[2] = 2;
+		lab.belong_ID = 10;
+		lab.uv = P2D(0, 0.5);
+		lab.pos_code = 5;
+		pi.labels.push_back(lab);
+		lab.tri[0] = 3;
+		lab.tri[1] = 1;
+		lab.tri[2] = 2;
+		lab.belong_ID = 10;
+		lab.uv = P2D(0.5, 0.5);
+		lab.pos_code = 4;
+		pi.labels.push_back(lab);
+		P.new_points[10] = pi;
+		pi.labels.clear();
+
 		Segment seg;
 		seg[0] = 4;
 		seg[1] = 5;
@@ -246,10 +265,22 @@ int main() {
 		seg[0] = 7;
 		seg[1] = 9;
 		P.segs.push_back(seg);
+		seg[0] = 10;
+		seg[1] = 8;
+		P.segs.push_back(seg);
+		seg[0] = 10;
+		seg[1] = 4;
+		P.segs.push_back(seg);
 
 		P.Triangulate();
 
 		S.WriteToFile("res.obj");
+
+		vector<Surface> res;
+		S.Cutting(P.segs, res);
+
+		res[0].WriteToFile("res0.obj");
+		res[1].WriteToFile("res1.obj");
 	}
 	if (mode == 111) {
 		DCEL G;

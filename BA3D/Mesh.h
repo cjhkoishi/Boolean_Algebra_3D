@@ -20,7 +20,7 @@ public:
 
 	P3D Norm();
 	double Dist(P3D p);
-	bool OnDetect(P3D p);
+	int OnDetect(P3D p);
 	/*
 	r s-parameter of point in triangle
 	t-parameter of point in segment
@@ -28,26 +28,26 @@ public:
 	0=0  1=1 2=01 -1=otherwise
 	*/
 	bool intersect(SegmentP ray, P3D& intersection, double& r, double& s, double& t, int& tri_pos_code, int& seg_pos_code);
-	bool intersect(TriangleP sub, SegmentP intersection, double& u0, double& v0, double& u1, double& v1, int& code1, int& code2);
+	bool intersect(TriangleP sub, SegmentP& intersection,P2D uv[4],int code[4]);
 
 	TriangleP();
 	TriangleP(P3D P, P3D Q, P3D R);
 };
 
+struct SegInfo{
+	SegmentP l;
+	vector<int> belong;//交线所属的三角面的index+位置码
+};
+void FindIntersection(vector<TriangleP> Ts,list<SegInfo>& intersections);
+
 class Surface
 {
 public:
-	struct FaceInfo {
-		list<Triangle>::iterator face;
-		map<int, pair<P3D, P2D>> uv_corr;
-		list<Segment> connections;
-	};
-
 	map<int, P3D> vertices;
 	list<Triangle> faces;
 
-
-	void TriangletionForCell(vector<FaceInfo> info);
+	void Cutting(vector<Segment> segs,vector<Surface>& result);
+	void Pasting(vector<Surface>& pieces);
 	void LoadFromFile(string filename);
 	void WriteToFile(string filename);
 	void ElimitateUnusedPoint();
@@ -83,17 +83,8 @@ public:
 
 	Surface* S;//目标曲面
 	map<int, PointInfo> new_points;//新点（包括所在三角面，位置标示码）索引对应于原顶点不重复的顶点ID
-	list<Segment> segs;//分割线
+	vector<Segment> segs;//分割线
 
 	void Triangulate();
 
-};
-
-class MeshWithCell :
-	public Surface
-{
-public:
-	vector<Segment> cell;
-
-	void Cutting(vector<Surface>& result);
 };
