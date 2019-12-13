@@ -132,8 +132,8 @@ int main() {
 		Surface S1, S2;
 		vector<TriangleP> Tris;
 		SegInfo segs1,segs2;
-		S1.LoadFromFile("model.obj");
-		S2.LoadFromFile("ICO.obj");
+		S1.LoadFromFile("tor.obj");
+		S2.LoadFromFile("model_.obj");
 
 		/*for_each(S1.faces.begin(), S1.faces.end(), [&](Triangle& T) {
 			TriangleP TP;
@@ -166,6 +166,8 @@ int main() {
 			});*/
 		Surface S3 = S1.meet(S2);
 		S3.WriteToFile("res.obj");
+		//S1.Intersect(S2, segs1, segs2);
+
 		return 0;
 	}
 	if (mode == 5) {

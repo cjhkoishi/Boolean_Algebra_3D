@@ -80,6 +80,7 @@ public:
 	~Surface();
 };
 
+//表示三角网格表面上的图，用于存储交线信息
 class Path
 {
 public:
@@ -89,6 +90,10 @@ public:
 			P2D uv;
 			int pos_code = -1;//0-2 vertex 3-5 edge 6-inside
 			int belong_ID = -65535;
+
+			bool operator==(const Label& obj)const{
+				return tri == obj.tri && pos_code == obj.pos_code && belong_ID == obj.belong_ID;
+			}
 			Label(Triangle tri, P2D uv, int pos_code, int belong_ID) :
 				tri(tri),
 				uv(uv),
@@ -104,7 +109,7 @@ public:
 
 	Surface* S;//目标曲面
 	map<int, PointInfo> new_points;//新点（包括所在三角面，位置标示码）索引对应于原顶点不重复的顶点ID
-	vector<Segment> segs;//分割线
+	vector<Segment> segs;//线段
 
 	void Triangulate();
 

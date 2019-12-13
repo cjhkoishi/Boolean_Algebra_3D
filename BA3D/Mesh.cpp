@@ -171,6 +171,7 @@ void Surface::ElimitateUnusedPoint()
 int Surface::Postion(P3D p)
 {
 	int random_factor = 0;
+	bool sign = Orientation();
 	while (true) {
 		SegmentP ray(p, p + P3D(
 			cos(random_factor) * cos(random_factor),
@@ -197,7 +198,7 @@ int Surface::Postion(P3D p)
 			}
 		}
 		if (flag) {
-			return wind_num % 2;
+			return ((wind_num % 2 == 1) ^ (!sign)) ? 1 : 0;
 		}
 		random_factor++;
 	}
@@ -214,7 +215,7 @@ double Surface::Vol()
 		double vol = det(v[0], v[1], v[2]);
 		res += vol;
 		});
-	return res;
+	return res / 6;
 }
 
 bool Surface::Orientation()
@@ -299,14 +300,14 @@ Surface Surface::meet(Surface sub)
 		Triangle T0 = *i->faces.begin();
 		TriangleP TP0(i->vertices[T0[0]], i->vertices[T0[1]], i->vertices[T0[2]]);
 		P3D test_p = (1.0 / 3) * (TP0.vert[0] + TP0.vert[1] + TP0.vert[2]);
-		if (Postion(test_p) == 0)
+		if (Postion(test_p) == 1)
 			pieces[2].push_back(*i);
 	};
 	for (auto i = pieces[0].begin(); i != pieces[0].end(); i++) {
 		Triangle T0 = *i->faces.begin();
 		TriangleP TP0(i->vertices[T0[0]], i->vertices[T0[1]], i->vertices[T0[2]]);
 		P3D test_p = (1.0 / 3) * (TP0.vert[0] + TP0.vert[1] + TP0.vert[2]);
-		if (sub.Postion(test_p) == 0)
+		if (sub.Postion(test_p) == 1)
 			pieces[2].push_back(*i);
 	};
 
@@ -487,6 +488,14 @@ bool TriangleP::intersect(
 		}
 	};
 
+	//判断平行
+	bool parallel_check = false;
+	P3D T = sub.vert[1] - sub.vert[0] + vert[0];
+	P3D W = sub.vert[2] - sub.vert[0] + vert[0];
+	if (Dist(T) < EPSILON && Dist(W) < EPSILON)
+		//parallel_check = true;
+		return false;
+
 	//检测顶点
 	P2D vert_uv[3] = { P2D(0,0),P2D(1,0),P2D(0,1) };
 	for (int i = 0; i < 3; i++) {
@@ -504,16 +513,17 @@ bool TriangleP::intersect(
 		int d_code = sub.OnDetect(vert[i]);
 		if (d_code != -1) {
 			P2D res_uv = sub.AffineCoor(vert[i]);
-			rs[0] = res_uv;
-			rs[1] = vert_uv[i];
+			rs[1] = res_uv;
+			rs[0] = vert_uv[i];
 			tri_pos_code[1] = d_code;
 			tri_pos_code[0] = i;
 			ADD(vert[i]);
 		}
 	}
 
-	if (Norm().cross(sub.Norm()).norm() == 0)
-		return k == 2;
+	//if (parallel_check)//若平行，根据已找出的endpoint数量确定结果
+		//return k == 2;
+
 	//检测边
 	for (int i = 0; i < 3; i++) {
 		SegmentP line(sub.vert[i], sub.vert[(i + 1) % 3]);
@@ -538,6 +548,8 @@ bool TriangleP::intersect(
 		ADD(pt);
 	}
 
+
+	//规范交线的方向
 	if (!LESS(intersection.vert[0], intersection.vert[1])) {
 		swap(intersection.vert[0], intersection.vert[1]);
 		swap(uv[0], uv[2]);
@@ -546,10 +558,12 @@ bool TriangleP::intersect(
 		swap(code[1], code[3]);
 	}
 
-	if (k != 2)
-		return false;
-	else
-		return true;
+	//??
+	if (intersection.vert[1] == P3D(1, 1.73205, 0)&&(code[2]==6||code[3]==6))
+		cout << "?" << endl;
+	//??
+
+	return k == 2;
 }
 
 P2D TriangleP::AffineCoor(P3D p)
@@ -582,17 +596,24 @@ void Path::Triangulate()
 {
 	//add new points into the mesh except those which is on the old vertex
 	map<Triangle, vector<PointInfo::Label> > labels;//每个面上的所属点标签，包含二维uv坐标
+	map<int, int> index_map;
 	for_each(new_points.begin(), new_points.end(), [&](pair<int, PointInfo> element) {
 		if (element.second.pos_code >= 1)
 			S->vertices[element.first] = element.second.point;
-		else {
-			cout << "there is a point with code 0." << endl;
-		}
+		/*else {
+			index_map[element.first] = element.second.labels.begin()->belong_ID;
+		}*/
 		auto labs = element.second.labels;
 		for_each(labs.begin(), labs.end(), [&](PointInfo::Label& lab) {
 			labels[lab.tri].push_back(lab);
 			});
 		});
+	/*for_each(segs.begin(), segs.end(), [&](Segment& line) {
+		if (index_map.find(line[0]) != index_map.end())
+			line[0] = index_map[line[0]];
+		if (index_map.find(line[1]) != index_map.end())
+			line[1] = index_map[line[1]];
+		});*/
 	//handle each triangle.
 
 
@@ -685,8 +706,6 @@ void Path::Triangulate()
 			new_T[1] = inv_ID[f->outer_edge->next->start_point];
 			new_T[2] = inv_ID[f->outer_edge->next->next->start_point];
 
-			cout << new_T[0] << new_T[1] << new_T[2] << endl;
-
 			S->faces.push_back(new_T);
 			});
 		});
@@ -698,6 +717,9 @@ Path::Path(Surface S, SegInfo SI)
 	this->S = new Surface(S);
 	int m = S.MaxIndex() + 1;
 	map<P3D, int, comparator> pool;
+	for_each(S.vertices.begin(), S.vertices.end(), [&](pair<int, P3D> element) {
+		pool[element.second] = element.first;
+		});
 	for_each(SI.begin(), SI.end(), [&](pair<const SegmentP, map<int, SOF>>& element) {
 		if (pool.find(element.first.vert[0]) == pool.end())
 			pool[element.first.vert[0]] = m++;
@@ -717,12 +739,14 @@ Path::Path(Surface S, SegInfo SI)
 			lab.belong_ID = pool[element.first.vert[0]];
 			lab.pos_code = sof.second.code[0];
 			lab.uv = sof.second.uv[0];
-			if (lab.pos_code != 6 || lab.pos_code == 6 && new_points[pool[element.first.vert[0]]].labels.size() == 0)
+			auto& L0 = new_points[pool[element.first.vert[0]]].labels;
+			if (find(L0.begin(),L0.end(),lab)==L0.end())
 				new_points[pool[element.first.vert[0]]].labels.push_back(lab);
 			lab.belong_ID = pool[element.first.vert[1]];
 			lab.pos_code = sof.second.code[1];
 			lab.uv = sof.second.uv[1];
-			if (lab.pos_code != 6 || lab.pos_code == 6 && new_points[pool[element.first.vert[1]]].labels.size() == 0)
+			auto& L1 = new_points[pool[element.first.vert[1]]].labels;
+			if (find(L1.begin(), L1.end(), lab) == L1.end())
 				new_points[pool[element.first.vert[1]]].labels.push_back(lab);
 
 			});
@@ -736,11 +760,6 @@ Path::Path(Surface S, SegInfo SI)
 		segs.push_back(line);
 		});
 
-	cout.precision(16);
-	for_each(pool.begin(), pool.end(), [&](auto& element) {
-
-		cout << element.first.coor[0] << " " << element.first.coor[1] << " " << element.first.coor[2] << endl;
-		});
 	return;
 }
 
@@ -759,13 +778,14 @@ void FindIntersection(vector<TriangleP> Ts, SegInfo& intersections)
 			}
 		}
 
+
 	cout << "Graphics3D[{";
 	bool _1 = false;
 	for_each(Ts.begin(), Ts.end(), [&](TriangleP& element) {
 		if (_1) {
 			cout << ',';
 		}
-		cout << "{EdgeForm[],Triangle[{{"
+		cout << "{Opacity[0.5],EdgeForm[],Triangle[{{"
 			<< element.vert[0].coor[0] << ","
 			<< element.vert[0].coor[1] << ","
 			<< element.vert[0].coor[2] << "},{"
@@ -779,7 +799,7 @@ void FindIntersection(vector<TriangleP> Ts, SegInfo& intersections)
 		_1 = true;
 		});
 	for_each(intersections.begin(), intersections.end(), [&](auto& element) {
-		if (element.second.size() <= 2)
+		if (element.second.size() == 2)
 		{
 			bool flag = true;
 			for_each(element.second.begin(), element.second.end(), [&](pair<const int, SOF>& sof) {
@@ -790,6 +810,25 @@ void FindIntersection(vector<TriangleP> Ts, SegInfo& intersections)
 			if (flag)
 				return;
 		}
+		/*else {
+			int k = 0;
+			set<P3D, comparator> pool;
+			for_each(element.second.begin(), element.second.end(), [&](pair<const int, SOF>& sof) {
+				SOF S = sof.second;
+				if (S.code[0] < 3 && S.code[1] < 3) {
+					TriangleP T;
+					T.vert[0] = element.first.vert[0];
+					T.vert[1] = element.first.vert[1];
+					T.vert[2] = Ts[sof.first].vert[(S.code[1] + 1) % 3 == S.code[0] ? (S.code[1] + 2) % 3 : (S.code[1] + 1) % 3];
+					P3D n = (1 / T.Norm().norm()) * T.Norm();
+					k++;
+					pool.insert(n);
+				}
+				});
+			int num = element.second.size() - k + pool.size();
+			if (num <= 2)
+				return;
+		}*/
 		cout << ',';
 		cout << "{Dashed,Thick,Line[{{";
 		cout << element.first.vert[0].coor[0] << ","
