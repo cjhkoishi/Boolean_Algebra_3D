@@ -290,7 +290,9 @@ Surface Surface::meet(Surface sub)
 	Intersect(sub, SI[0], SI[1]);
 	Path P[2] = { Path(*this,SI[0]),Path(sub,SI[1]) };
 	P[0].Triangulate();
+	//P[0].S->WriteToFile("res_0.obj");
 	P[1].Triangulate();
+	//P[1].S->WriteToFile("res_1.obj");
 
 	P[0].S->Cutting(P[0].segs, pieces[0]);
 	P[1].S->Cutting(P[1].segs, pieces[1]);
@@ -548,7 +550,6 @@ bool TriangleP::intersect(
 		ADD(pt);
 	}
 
-
 	//规范交线的方向
 	if (!LESS(intersection.vert[0], intersection.vert[1])) {
 		swap(intersection.vert[0], intersection.vert[1]);
@@ -557,11 +558,6 @@ bool TriangleP::intersect(
 		swap(code[0], code[2]);
 		swap(code[1], code[3]);
 	}
-
-	//??
-	if (intersection.vert[1] == P3D(1, 1.73205, 0)&&(code[2]==6||code[3]==6))
-		cout << "?" << endl;
-	//??
 
 	return k == 2;
 }
@@ -614,12 +610,18 @@ void Path::Triangulate()
 		if (index_map.find(line[1]) != index_map.end())
 			line[1] = index_map[line[1]];
 		});*/
-	//handle each triangle.
+		//handle each triangle.
 
 
 
 	for_each(labels.begin(), labels.end(), [&](pair<Triangle, vector<PointInfo::Label> > element) {
-		cout << element.first[0] << element.first[1] << element.first[2] << endl;
+		cout << element.first[0] << " " << element.first[1] << " " << element.first[2] << endl;
+
+		//??
+		if (element.first[0] == 0 && element.first[1] == 3 && element.first[2] == 2)
+			cout << "?" << endl;
+		//??
+
 		DCEL G;
 		map<int, Vertex*> ID;//用于存储DCEL顶点ID
 		map<Vertex*, int> inv_ID;
@@ -686,7 +688,7 @@ void Path::Triangulate()
 					return;
 
 			int code[2] = { end_pt[0].pos_code ,end_pt[1].pos_code };
-			bool invalid = code[0] < 3 && (code[1] == code[0] || code[1] == code[0] + 3 || code[1] == (code[0] + 2) % 3 + 3);
+			bool invalid = code[0] < 3 && (code[1] < 3  || code[1] == code[0] + 3 || code[1] == (code[0] + 2) % 3 + 3);
 			invalid |= code[0] >= 3 && code[0] < 6 && (code[1] == code[0] || code[1] == code[0] - 3 || code[1] == (code[0] - 2) % 3);
 
 			if (code[0] == 6 || code[1] == 6 || !invalid/*判断是否为内部边（incomplete）*/) {
@@ -695,6 +697,7 @@ void Path::Triangulate()
 			});
 		//三角化
 		G.Trianglate();
+
 		//删除原面
 		S->faces.remove(element.first);
 		//添加新面
@@ -740,7 +743,7 @@ Path::Path(Surface S, SegInfo SI)
 			lab.pos_code = sof.second.code[0];
 			lab.uv = sof.second.uv[0];
 			auto& L0 = new_points[pool[element.first.vert[0]]].labels;
-			if (find(L0.begin(),L0.end(),lab)==L0.end())
+			if (find(L0.begin(), L0.end(), lab) == L0.end())
 				new_points[pool[element.first.vert[0]]].labels.push_back(lab);
 			lab.belong_ID = pool[element.first.vert[1]];
 			lab.pos_code = sof.second.code[1];
