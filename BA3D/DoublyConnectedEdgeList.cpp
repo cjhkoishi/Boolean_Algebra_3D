@@ -444,7 +444,7 @@ void DoublyConnectedEdgeList::Trianglate()
 					P2D d0 = t0->start_point->p - t1->start_point->p;
 					P2D d1 = t1->start_point->p - t2->start_point->p;
 					double exproduct = d1.cross(d0);
-					bool nearly_parallel = abs(exproduct) / (d0.norm() * d1.norm()) < EPSILON;
+					bool nearly_parallel = abs(exproduct) / (d0.norm() * d1.norm()) < EPSILON;//robust
 					if ((exproduct > 0 && V[buf].second == 0 || exproduct < 0 && V[buf].second == 1) && !nearly_parallel)
 						new_edges.push_back(pair<HalfEdge*, HalfEdge*>(t0, t2));
 					else {

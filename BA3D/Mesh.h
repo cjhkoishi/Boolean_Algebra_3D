@@ -75,6 +75,8 @@ public:
 	void Intersect(Surface sub,SegInfo& SI1,SegInfo& SI2);
 
 	Surface meet(Surface sub);
+	Surface join(Surface sub);
+	Surface inverse();
 
 	Surface();
 	~Surface();

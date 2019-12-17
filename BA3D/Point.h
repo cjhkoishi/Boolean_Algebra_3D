@@ -129,7 +129,14 @@ public:
 class comparator {
 public:
 	bool operator()(const P2D& p1, const P2D& p2)const {
-		return (p1.coor[1] < p2.coor[1] || p1.coor[1] == p2.coor[1] && p1.coor[0] < p2.coor[0]) && !(p1 == p2);
+		bool res = false;
+		for (int i = 1; i >= 0; i--)
+			if (abs(p1.coor[i] - p2.coor[i]) >= EPSILON) {
+				res = p1.coor[i] < p2.coor[i];
+				break;
+			}
+		res &= !(p1 == p2);
+		return res;
 	}
 
 	bool operator()(const P3D& p1, const P3D& p2)const {

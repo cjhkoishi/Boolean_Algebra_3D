@@ -317,6 +317,23 @@ Surface Surface::meet(Surface sub)
 	return res;
 }
 
+Surface Surface::join(Surface sub)
+{
+	Surface S1 = inverse();
+	Surface S2 = sub.inverse();
+	Surface res = S1.meet(S2);
+	return res.inverse();
+}
+
+Surface Surface::inverse()
+{
+	Surface res(*this);
+	for_each(res.faces.begin(), res.faces.end(), [&](Triangle& T) {
+		swap(T[1], T[2]);
+		});
+	return res;
+}
+
 Surface::Surface()
 {
 }
@@ -467,6 +484,9 @@ bool TriangleP::intersect(
 	int tri_pos_code[2], seg_pos_code;
 	int k = 0;
 	auto ADD = [&](P3D& p) {
+
+
+
 		if (k == 0) {
 			intersection.vert[0] = p;
 			uv[0] = rs[0];
@@ -569,8 +589,8 @@ P2D TriangleP::AffineCoor(P3D p)
 	double xx = X * X;
 	double xy = X * Y;
 	double yy = Y * Y;
-	double xp = X * p;
-	double yp = Y * p;
+	double xp = X * (p - vert[0]);
+	double yp = Y * (p - vert[0]);
 	double cm = xx * yy - xy * xy;
 	double um = xp * yy - yp * xy;
 	double vm = xx * yp - xp * xy;
@@ -617,10 +637,10 @@ void Path::Triangulate()
 	for_each(labels.begin(), labels.end(), [&](pair<Triangle, vector<PointInfo::Label> > element) {
 		cout << element.first[0] << " " << element.first[1] << " " << element.first[2] << endl;
 
-		//??
-		if (element.first[0] == 0 && element.first[1] == 3 && element.first[2] == 2)
+
+		if (element.first[0] == 0 && element.first[1] == 5 && element.first[2] == 4)
 			cout << "?" << endl;
-		//??
+
 
 		DCEL G;
 		map<int, Vertex*> ID;//用于存储DCEL顶点ID
@@ -688,7 +708,7 @@ void Path::Triangulate()
 					return;
 
 			int code[2] = { end_pt[0].pos_code ,end_pt[1].pos_code };
-			bool invalid = code[0] < 3 && (code[1] < 3  || code[1] == code[0] + 3 || code[1] == (code[0] + 2) % 3 + 3);
+			bool invalid = code[0] < 3 && (code[1] < 3 || code[1] == code[0] + 3 || code[1] == (code[0] + 2) % 3 + 3);
 			invalid |= code[0] >= 3 && code[0] < 6 && (code[1] == code[0] || code[1] == code[0] - 3 || code[1] == (code[0] - 2) % 3);
 
 			if (code[0] == 6 || code[1] == 6 || !invalid/*判断是否为内部边（incomplete）*/) {
