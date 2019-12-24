@@ -187,7 +187,7 @@ int Surface::Postion(P3D p)
 			int tc, sc;
 			TriangleP T(vertices[(*i)[0]], vertices[(*i)[1]], vertices[(*i)[2]]);
 			bool nontrivial = T.intersect(ray, PIN, r, s, t, tc, sc);
-			if ((sc == 0 || !nontrivial) && T.OnDetect(p) != -1) {
+			if ((sc == 0 || !nontrivial) && T.Postion(p) != -1) {
 				return 2;
 			}
 			if (!nontrivial || tc != 6 && tc != -1) {
@@ -225,7 +225,7 @@ int Surface::Postion(TriangleP T_)
 			int tc, sc;
 			TriangleP T(vertices[(*i)[0]], vertices[(*i)[1]], vertices[(*i)[2]]);
 			bool nontrivial = T.intersect(ray, PIN, r, s, t, tc, sc);
-			if ((sc == 0 || !nontrivial) && T.OnDetect(p) != -1) {
+			if ((sc == 0 || !nontrivial) && T.Postion(p) != -1) {
 				P3D n1 = T.Norm();
 				P3D n2 = T_.Norm();
 				return n1 * n2 > 0 ? 2 : 3;
@@ -391,7 +391,7 @@ double SegmentP::Dist(P3D p)
 	return line_dist;
 }
 
-int SegmentP::OnDetect(P3D p)
+int SegmentP::Postion(P3D p)
 {
 	for (int i = 0; i < 2; i++)
 		if (p == vert[i])
@@ -435,14 +435,14 @@ double TriangleP::Dist(P3D p)
 	return abs(res);
 }
 
-int TriangleP::OnDetect(P3D p)
+int TriangleP::Postion(P3D p)
 {
 	if (Dist(p) >= EPSILON)
 		return -1;
 
 	for (int i = 0; i < 3; i++) {
 		SegmentP S(vert[i], vert[(i + 1) % 3]);
-		int r = S.OnDetect(p);
+		int r = S.Postion(p);
 		if (r == -1)
 			continue;
 		else if (r == 0 || r == 1)
@@ -496,7 +496,7 @@ bool TriangleP::intersect(
 	s = E2 * P / -t0;
 
 
-	int code = OnDetect(intersection);
+	int code = Postion(intersection);
 	bool flag = code == -1 || code == 6;
 	if (flag && r >= 0 && s >= 0 && r + s <= 1)
 		tri_pos_code = 6;
@@ -504,7 +504,7 @@ bool TriangleP::intersect(
 		tri_pos_code = code;
 
 
-	code = ray.OnDetect(intersection);
+	code = ray.Postion(intersection);
 	flag = code == -1 || code == 2;
 	if (flag && t >= 0 && t <= 1)
 		seg_pos_code = 2;
@@ -562,7 +562,7 @@ bool TriangleP::intersect(
 	//¼ì²â¶¥µã
 	P2D vert_uv[3] = { P2D(0,0),P2D(1,0),P2D(0,1) };
 	for (int i = 0; i < 3; i++) {
-		int d_code = OnDetect(sub.vert[i]);
+		int d_code = Postion(sub.vert[i]);
 		if (d_code != -1) {
 			P2D res_uv = AffineCoor(sub.vert[i]);
 			rs[0] = res_uv;
@@ -573,7 +573,7 @@ bool TriangleP::intersect(
 		}
 	}
 	for (int i = 0; i < 3; i++) {
-		int d_code = sub.OnDetect(vert[i]);
+		int d_code = sub.Postion(vert[i]);
 		if (d_code != -1) {
 			P2D res_uv = sub.AffineCoor(vert[i]);
 			rs[1] = res_uv;

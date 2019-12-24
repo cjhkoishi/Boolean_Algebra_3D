@@ -7,7 +7,7 @@ public:
 	P3D vert[2];
 
 	double Dist(P3D p);
-	int OnDetect(P3D p);
+	int Postion(P3D p);
 
 	SegmentP();
 	SegmentP(P3D P, P3D Q);
@@ -20,7 +20,7 @@ public:
 
 	P3D Norm();
 	double Dist(P3D p);
-	int OnDetect(P3D p);
+	int Postion(P3D p);
 	/*
 	r s-parameter of point in triangle
 	t-parameter of point in segment

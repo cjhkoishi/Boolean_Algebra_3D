@@ -32,7 +32,7 @@ int main() {
 			}
 			for (int i = 0; i < n_cube * (n_cube - 1); i++) {
 				double ptest = rand() * 1.0 / RAND_MAX;
-				if (ptest < p /*|| i / (n_cube - 1) == 0 || i / (n_cube - 1) == n_cube - 1*/) {
+				if (ptest < p || i / (n_cube - 1) == 0 || i / (n_cube - 1) == n_cube - 1/**/) {
 					Segment s;
 					s[0] = i % (n_cube - 1) + n_cube * (i / (n_cube - 1));
 					s[1] = i % (n_cube - 1) + n_cube * (i / (n_cube - 1)) + 1;
@@ -41,7 +41,7 @@ int main() {
 			}
 			for (int i = 0; i < n_cube * (n_cube - 1); i++) {
 				double ptest = rand() * 1.0 / RAND_MAX;
-				if (ptest < p /*|| i % n_cube == 0 || i % n_cube == n_cube - 1*/) {
+				if (ptest < p || i % n_cube == 0 || i % n_cube == n_cube - 1/**/) {
 					Segment s;
 					s[0] = i;
 					s[1] = i + n_cube;
@@ -124,7 +124,7 @@ int main() {
 		Surface S1, S2;
 		vector<TriangleP> Tris;
 		SegInfo segs1,segs2;
-		S1.LoadFromFile("model_I.obj");
+		S1.LoadFromFile("tor.obj");
 		S2.LoadFromFile("model_.obj");
 
 		/*for_each(S1.faces.begin(), S1.faces.end(), [&](Triangle& T) {
@@ -395,8 +395,8 @@ void drawG(DCEL& G)
 			(const int*)nts,
 			num_b,
 			color);
-		cv::imshow("test", img);
-		cv::waitKey(0);
+		//cv::imshow("test", img);
+		//cv::waitKey(0);
 		//limit--;
 		if (limit == 0)
 			break;
