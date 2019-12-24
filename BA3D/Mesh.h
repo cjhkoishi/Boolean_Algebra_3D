@@ -69,6 +69,7 @@ public:
 	void WriteToFile(string filename);
 	void ElimitateUnusedPoint();
 	int Postion(P3D p);
+	int Postion(TriangleP T);
 	double Vol();
 	bool Orientation();
 	int MaxIndex();

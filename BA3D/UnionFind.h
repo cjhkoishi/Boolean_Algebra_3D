@@ -37,5 +37,11 @@ public:
 		}
 		return coms.size();
 	};
+
+	UnionFind() {};
+	UnionFind(int n) {
+		for (int i = 0; i < n; i++)
+			Add(i);
+	};
 };
 

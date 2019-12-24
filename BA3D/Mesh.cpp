@@ -6,6 +6,7 @@
 
 void Surface::Cutting(vector<Segment> segs, vector<Surface>& result)
 {
+	result.clear();
 	UnionFind com;
 	vector<Triangle> vec_faces;
 	map<int, vector<int>> neighbor;
@@ -186,7 +187,7 @@ int Surface::Postion(P3D p)
 			int tc, sc;
 			TriangleP T(vertices[(*i)[0]], vertices[(*i)[1]], vertices[(*i)[2]]);
 			bool nontrivial = T.intersect(ray, PIN, r, s, t, tc, sc);
-			if (sc == 0 && T.OnDetect(p)) {
+			if ((sc == 0 || !nontrivial) && T.OnDetect(p) != -1) {
 				return 2;
 			}
 			if (!nontrivial || tc != 6 && tc != -1) {
@@ -202,6 +203,47 @@ int Surface::Postion(P3D p)
 		}
 		random_factor++;
 	}
+}
+
+int Surface::Postion(TriangleP T_)
+{
+	P3D p = (1.0 / 3) * (T_.vert[0] + T_.vert[1] + T_.vert[2]);
+
+	int random_factor = 0;
+	bool sign = Orientation();
+	while (true) {
+		SegmentP ray(p, p + P3D(
+			cos(random_factor) * cos(random_factor),
+			cos(random_factor) * sin(random_factor),
+			sin(random_factor)
+		));
+		bool flag = true;
+		int wind_num = 0;
+		for (auto i = faces.begin(); i != faces.end(); i++) {
+			P3D PIN;
+			double r, s, t;
+			int tc, sc;
+			TriangleP T(vertices[(*i)[0]], vertices[(*i)[1]], vertices[(*i)[2]]);
+			bool nontrivial = T.intersect(ray, PIN, r, s, t, tc, sc);
+			if ((sc == 0 || !nontrivial) && T.OnDetect(p) != -1) {
+				P3D n1 = T.Norm();
+				P3D n2 = T_.Norm();
+				return n1 * n2 > 0 ? 2 : 3;
+			}
+			if (!nontrivial || tc != 6 && tc != -1) {
+				flag = false;
+				break;
+			}
+			if (tc == 6 && t > 0 && sc != 0) {
+				wind_num++;
+			}
+		}
+		if (flag) {
+			return ((wind_num % 2 == 1) ^ (!sign)) ? 1 : 0;
+		}
+		random_factor++;
+	}
+	return 0;
 }
 
 double Surface::Vol()
@@ -301,15 +343,14 @@ Surface Surface::meet(Surface sub)
 	for (auto i = pieces[1].begin(); i != pieces[1].end(); i++) {
 		Triangle T0 = *i->faces.begin();
 		TriangleP TP0(i->vertices[T0[0]], i->vertices[T0[1]], i->vertices[T0[2]]);
-		P3D test_p = (1.0 / 3) * (TP0.vert[0] + TP0.vert[1] + TP0.vert[2]);
-		if (Postion(test_p) == 1)
+		int pos = Postion(TP0);
+		if (pos == 1 || pos == 2)
 			pieces[2].push_back(*i);
 	};
 	for (auto i = pieces[0].begin(); i != pieces[0].end(); i++) {
 		Triangle T0 = *i->faces.begin();
 		TriangleP TP0(i->vertices[T0[0]], i->vertices[T0[1]], i->vertices[T0[2]]);
-		P3D test_p = (1.0 / 3) * (TP0.vert[0] + TP0.vert[1] + TP0.vert[2]);
-		if (sub.Postion(test_p) == 1)
+		if (sub.Postion(TP0) == 1)
 			pieces[2].push_back(*i);
 	};
 

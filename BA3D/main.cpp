@@ -5,6 +5,7 @@
 #include<opencv2/core.hpp>
 #include<opencv2/imgproc.hpp>
 #include<opencv2/highgui.hpp>
+#include "Yin.h"
 using namespace std;
 
 cv::Mat img = cv::Mat::zeros(600, 800, CV_8UC3);
@@ -81,16 +82,7 @@ int main() {
 		cv::waitKey(0);
 	}
 	if (mode == 2) {
-		TriangleP T(P3D(0, 0, 0), P3D(2, 1, 1), P3D(0, 2, 2));
-
-		SegmentP L(P3D(1, 0.5, 0.5), P3D(1, 1, -2));
-		P3D I(0, 0, 0);
-		double r, s, t;
-		int tc, sc;
-		T.intersect(L, I, r, s, t, tc, sc);
-		cout << r << " " << s << " " << t << " " << tc << " " << sc << " " << endl;
-		SegmentP ray(P3D(1, 2, 3), P3D(2, 0, 5));
-		cout << ray.OnDetect(P3D(0, 4, 1)) << endl;
+		TriangleP T(P3D(0.1675, 0.8975, 0.2245), P3D(2.7843, 1.1145, 1.4268), P3D(0, 2.1246, 2.7586));
 
 	}
 	if (mode == 3) {
@@ -132,7 +124,7 @@ int main() {
 		Surface S1, S2;
 		vector<TriangleP> Tris;
 		SegInfo segs1,segs2;
-		S1.LoadFromFile("tor.obj");
+		S1.LoadFromFile("model_I.obj");
 		S2.LoadFromFile("model_.obj");
 
 		/*for_each(S1.faces.begin(), S1.faces.end(), [&](Triangle& T) {
@@ -164,7 +156,7 @@ int main() {
 			ss << index++ << ".obj";
 			element.WriteToFile(ss.str());
 			});*/
-		Surface S3 = S1.meet(S2);
+		Surface S3 = S1.inverse().meet(S2);
 		S3.WriteToFile("res.obj");
 		//S1.Intersect(S2, segs1, segs2);
 
@@ -349,25 +341,20 @@ int main() {
 		nn.WriteToFile("Past.obj");
 	}
 	if (mode == 111) {
-		DCEL G;
-		Vertex* V[5];
-		V[0] = G.AddVertex(P2D(0, 0));
-		V[1] = G.AddVertex(P2D(1, 0));
-		V[2] = G.AddVertex(P2D(0, 1));
-		V[3] = G.AddVertex(P2D(0.25, 0.25));
-		V[4] = G.AddVertex(P2D(0.375, 0.375));
-		G.AddEdge(V[0], V[1]);
-		G.AddEdge(V[1], V[2]);
-		G.AddEdge(V[2], V[0]);
-		G.AddEdge(V[3], V[4]);
-		drawG(G);
-		cv::imshow("test", img);
-		cv::waitKey(0);
-		img = cv::Mat::zeros(600, 800, CV_8UC3);
-		G.Trianglate();
-		drawG(G);
-		cv::imshow("test", img);
-		cv::waitKey(0);
+		Yin Y;
+		Surface cube[4];
+		cube[0].LoadFromFile("Yin/CubeT/cube0.obj");
+		cube[1].LoadFromFile("Yin/CubeT/cube1.obj");
+		cube[2].LoadFromFile("Yin/CubeT/cube2.obj");
+		cube[3].LoadFromFile("Yin/CubeT/cube3.obj");
+
+		Y.boundarys.push_back(cube[0]);
+		Y.boundarys.push_back(cube[1]);
+		Y.boundarys.push_back(cube[2]);
+		Y.boundarys.push_back(cube[3]);
+
+		Y.GenerateHasseDigram();
+		return 0;
 	}
 }
 
