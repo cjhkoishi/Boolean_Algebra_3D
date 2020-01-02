@@ -493,35 +493,6 @@ bool DoublyConnectedEdgeList::isTrianglated()
 	return true;
 }
 
-void DoublyConnectedEdgeList::ExportMCode()
-{
-	for (auto i = face_list.begin(); i != face_list.end(); i++) {
-		cout << "{ { ";
-		HalfEdge* l = (*i)->outer_edge;
-		if (l != 0) {
-			do {
-				cout << " {" << l->start_point->p.coor[0] << "," << l->start_point->p.coor[1] << "}";
-				l = l->next;
-				if (l != (*i)->outer_edge)
-					cout << ",";
-			} while (l != (*i)->outer_edge);
-		}
-		cout << "}";
-		for (auto j = (*i)->inner_edge.begin(); j != (*i)->inner_edge.end(); j++) {
-			l = (*j);
-			cout << ", {";
-			do {
-				cout << " {" << l->start_point->p.coor[0] << "," << l->start_point->p.coor[1] << "}";
-				l = l->next;
-				if (l != *j)
-					cout << ",";
-			} while (l != *j);
-			cout << " }";
-		}
-		cout << " }" << endl;
-	}
-}
-
 DoublyConnectedEdgeList::DoublyConnectedEdgeList()
 {
 	face_list.push_back(new Face);

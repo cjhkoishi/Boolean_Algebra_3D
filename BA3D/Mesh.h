@@ -67,13 +67,16 @@ public:
 	void Pasting(vector<Surface> pieces);
 	void LoadFromFile(string filename);
 	void WriteToFile(string filename);
-	void ElimitateUnusedPoint();
+	void AdjustVerticesID();
 	int Postion(P3D p);
 	int Postion(TriangleP T);
 	double Vol();
 	bool Orientation();
 	int MaxIndex();
 	void Intersect(Surface sub,SegInfo& SI1,SegInfo& SI2);
+
+	bool OCScheck();
+	TriangleP GetGeoTriangle(Triangle T);
 
 	Surface meet(Surface sub);
 	Surface join(Surface sub);
@@ -110,12 +113,14 @@ public:
 		vector<Label> labels;
 	};
 
-	Surface* S;//目标曲面
+	Surface* target;//目标曲面
 	map<int, PointInfo> new_points;//新点（包括所在三角面，位置标示码）索引对应于原顶点不重复的顶点ID
 	vector<Segment> segs;//线段
 
+	void Construct(Surface S, SegInfo SI);
 	void Triangulate();
 
 	Path() {};
 	Path(Surface S,SegInfo SI);
+	~Path();
 };

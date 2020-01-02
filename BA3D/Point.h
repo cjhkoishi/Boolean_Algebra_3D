@@ -177,6 +177,11 @@ public:
 	int& operator[](int index) {
 		return _array[index];
 	}
+
+	Simplex<n>() {
+		for (int i = 0; i < n; i++)
+			_array[i] = 0;
+	}
 };
 typedef Simplex<2> Segment;
 typedef Simplex<3> Triangle;

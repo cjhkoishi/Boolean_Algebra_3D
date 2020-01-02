@@ -28,7 +28,7 @@ int main() {
 			vector<Segment> ls;
 			ps.resize(n_cube * n_cube);
 			for (int i = 0; i < n_cube * n_cube; i++) {
-				ps[i] = P2D(i % n_cube + 0.5, i / n_cube + 0.5);
+				ps[i] = P2D(i % n_cube + 0.5 + 0.2 * rand() * 1.0 / RAND_MAX, i / n_cube + 0.5 + 0.2 * rand() * 1.0 / RAND_MAX);
 			}
 			for (int i = 0; i < n_cube * (n_cube - 1); i++) {
 				double ptest = rand() * 1.0 / RAND_MAX;
@@ -123,8 +123,8 @@ int main() {
 	if (mode == 10) {
 		Surface S1, S2;
 		vector<TriangleP> Tris;
-		SegInfo segs1,segs2;
-		S1.LoadFromFile("tor.obj");
+		SegInfo segs1, segs2;
+		S1.LoadFromFile("sphere.obj");
 		S2.LoadFromFile("model_.obj");
 
 		/*for_each(S1.faces.begin(), S1.faces.end(), [&](Triangle& T) {
@@ -156,8 +156,11 @@ int main() {
 			ss << index++ << ".obj";
 			element.WriteToFile(ss.str());
 			});*/
-		Surface S3 = S1.inverse().meet(S2);
+		Surface S3 = S1.join(S2);
 		S3.WriteToFile("res.obj");
+		cout << S1.OCScheck() << endl;
+		cout << S2.OCScheck() << endl;
+		cout << S3.OCScheck() << endl;
 		//S1.Intersect(S2, segs1, segs2);
 
 		return 0;
@@ -180,165 +183,16 @@ int main() {
 		S.LoadFromFile("ar3k.obj");
 		cout << S.Vol() << endl;
 		P3D p1(1e-10, 1e-10, 1e-10);
-		P3D p2(0,0,0);
+		P3D p2(0, 0, 0);
 		cout << (p1 == p2) << endl;
 	}
 	if (mode == 7) {
-		Surface S;
-		S.LoadFromFile("data.obj");
-		Path P;
-		P.S = &S;
-		Path::PointInfo pi;
-		Path::PointInfo::Label lab(Triangle(), P2D(0, 0), 0, 0);
-
-		pi.point = P3D(0, 1, 0);
-		pi.pos_code = 2;
-		lab.tri[0] = 1;
-		lab.tri[1] = 0;
-		lab.tri[2] = 2;
-		lab.belong_ID = 4;
-		lab.uv = P2D(0.25, 0.25);
-		lab.pos_code = 6;
-		pi.labels.push_back(lab);
-		P.new_points[4] = pi;
-		pi.labels.clear();
-
-		pi.point = P3D(0, 0.5, 0);
-		pi.pos_code = 2;
-		lab.tri[0] = 1;
-		lab.tri[1] = 0;
-		lab.tri[2] = 2;
-		lab.belong_ID = 5;
-		lab.uv = P2D(0.375, 0.375);
-		lab.pos_code = 6;
-		pi.labels.push_back(lab);
-		P.new_points[5] = pi;
-		pi.labels.clear();
-
-		pi.point = P3D(0.5, 0.5, 0);
-		pi.pos_code = 2;
-		lab.tri[0] = 1;
-		lab.tri[1] = 0;
-		lab.tri[2] = 2;
-		lab.belong_ID = 6;
-		lab.uv = P2D(0.625, 0.125);
-		lab.pos_code = 6;
-		pi.labels.push_back(lab);
-		P.new_points[6] = pi;
-		pi.labels.clear();
-
-		pi.point = P3D(0.5, 1, 0);
-		pi.pos_code = 1;
-		lab.tri[0] = 1;
-		lab.tri[1] = 0;
-		lab.tri[2] = 2;
-		lab.belong_ID = 7;
-		lab.uv = P2D(0.5, 0);
-		lab.pos_code = 3;
-		pi.labels.push_back(lab);
-		lab.tri[0] = 3;
-		lab.tri[1] = 0;
-		lab.tri[2] = 1;
-		lab.belong_ID = 7;
-		lab.uv = P2D(0.5, 0.5);
-		lab.pos_code = 4;
-		pi.labels.push_back(lab);
-		P.new_points[7] = pi;
-		pi.labels.clear();
-
-		pi.point = P3D(0.25, 1.5, 0);
-		pi.pos_code = 1;
-		lab.tri[0] = 1;
-		lab.tri[1] = 0;
-		lab.tri[2] = 2;
-		lab.belong_ID = 8;
-		lab.uv = P2D(0.25, 0);
-		lab.pos_code = 3;
-		pi.labels.push_back(lab);
-		lab.tri[0] = 3;
-		lab.tri[1] = 0;
-		lab.tri[2] = 1;
-		lab.belong_ID = 8;
-		lab.uv = P2D(0.25, 0.75);
-		lab.pos_code = 4;
-		pi.labels.push_back(lab);
-		P.new_points[8] = pi;
-		pi.labels.clear();
-
-		pi.point = P3D(0.75, 0.5, 0);
-		pi.pos_code = 1;
-		lab.tri[0] = 1;
-		lab.tri[1] = 0;
-		lab.tri[2] = 2;
-		lab.belong_ID = 9;
-		lab.uv = P2D(0.75, 0);
-		lab.pos_code = 3;
-		pi.labels.push_back(lab);
-		lab.tri[0] = 3;
-		lab.tri[1] = 0;
-		lab.tri[2] = 1;
-		lab.belong_ID = 9;
-		lab.uv = P2D(0.75, 0.25);
-		lab.pos_code = 4;
-		pi.labels.push_back(lab);
-		P.new_points[9] = pi;
-		pi.labels.clear();
-
-		pi.point = P3D(-0.5, 1, 0);
-		pi.pos_code = 1;
-		lab.tri[0] = 1;
-		lab.tri[1] = 0;
-		lab.tri[2] = 2;
-		lab.belong_ID = 10;
-		lab.uv = P2D(0, 0.5);
-		lab.pos_code = 5;
-		pi.labels.push_back(lab);
-		lab.tri[0] = 3;
-		lab.tri[1] = 1;
-		lab.tri[2] = 2;
-		lab.belong_ID = 10;
-		lab.uv = P2D(0.5, 0.5);
-		lab.pos_code = 4;
-		pi.labels.push_back(lab);
-		P.new_points[10] = pi;
-		pi.labels.clear();
-
-		Segment seg;
-		seg[0] = 4;
-		seg[1] = 5;
-		P.segs.push_back(seg);
-		seg[0] = 5;
-		seg[1] = 6;
-		P.segs.push_back(seg);
-		seg[0] = 7;
-		seg[1] = 6;
-		P.segs.push_back(seg);
-		seg[0] = 7;
-		seg[1] = 8;
-		P.segs.push_back(seg);
-		seg[0] = 7;
-		seg[1] = 9;
-		P.segs.push_back(seg);
-		seg[0] = 10;
-		seg[1] = 8;
-		P.segs.push_back(seg);
-		seg[0] = 10;
-		seg[1] = 4;
-		P.segs.push_back(seg);
-
-		P.Triangulate();
-
-		S.WriteToFile("res.obj");
-
-		vector<Surface> res;
-		S.Cutting(P.segs, res);
-
-		res[0].WriteToFile("res0.obj");
-		res[1].WriteToFile("res1.obj");
-
-		Surface nn;
-		nn.Pasting(res);
-		nn.WriteToFile("Past.obj");
+		Surface bag;
+		bag.LoadFromFile("double.obj");
+		Yin Y;
+		Y.split(bag);
+		Y.OutPut("W");
+		return 0;
 	}
 	if (mode == 111) {
 		Yin Y;
@@ -354,6 +208,30 @@ int main() {
 		Y.boundarys.push_back(cube[3]);
 
 		Y.GenerateHasseDigram();
+		Y.OutPut("C", 1);
+		return 0;
+	}
+	if (mode == 222) {
+		Yin Y[2];
+		Surface S[2];
+		S[0].LoadFromFile("tor.obj");
+		S[1].LoadFromFile("2xICO.obj");
+		Y[0].split(S[0]);
+		Y[1].split(S[1]);
+
+		Yin res=Y[0].join(Y[1]);
+		cout << res.boundarys.size() << endl;
+		res.OutPut("W",1);
+
+		return 0;
+	}
+	if (mode == 333) {
+		Surface adj;
+		adj.LoadFromFile("ar3k_.obj");
+		for (auto i = adj.vertices.begin(); i != adj.vertices.end(); i++) {
+			i->second = 2 * (i->second);
+		}
+		adj.WriteToFile("ar3k_.obj");
 		return 0;
 	}
 }

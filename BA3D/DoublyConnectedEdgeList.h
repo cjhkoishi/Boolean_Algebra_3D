@@ -48,8 +48,6 @@ public:
 	void Trianglate();
 	bool isTrianglated();
 
-	void ExportMCode();
-
 	DoublyConnectedEdgeList();
 	~DoublyConnectedEdgeList();
 };
