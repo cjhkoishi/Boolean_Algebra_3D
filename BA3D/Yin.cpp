@@ -119,15 +119,14 @@ void Yin::GenerateHasseDigram()
 			A.Union(s[0], s[1]);
 		}
 		});
-	//处理无界yin集的根节点
+	//处理孤立逆向曲面
 	if (!root_sign) {
 		int f = -1;
 		for (int i = 0; i < connected.size(); i++) {
-			if (connected[i]) {
+			if (!connected[i]) {
 				if (f == -1)
 					f = i;
-				else
-					A.Union(i, f);
+				A.Union(i, f);
 			}
 		}
 	}
@@ -166,7 +165,7 @@ int Yin::Postion(TriangleP T)
 		bool component_res = true;
 		for (int j = 0; j < atoms[i].size(); j++) {
 			int pos = boundarys[atoms[i][j]].Postion(T);
-			if (pos == 2|| pos == 3)
+			if (pos == 2 || pos == 3)
 				return pos;
 			component_res &= (pos == 1);
 		}
@@ -486,7 +485,7 @@ Yin Yin::meet(Yin& obj)
 	Intersect(obj, SI[0], SI[1]);
 	vector<Path> P[2];
 	vector<vector<Segment>> traces;
-	vector<Surface> pieces[2],res;
+	vector<Surface> pieces[2], res;
 
 	P[0].resize(boundarys.size());
 	P[1].resize(obj.boundarys.size());
@@ -508,7 +507,7 @@ Yin Yin::meet(Yin& obj)
 		obj.boundarys[i] = *P[1][i].target;
 	}
 	obj.Cutting(traces, pieces[1]);
-	
+
 	for (int i = 0; i < pieces[0].size(); i++) {
 		TriangleP T = pieces[0][i].GetGeoTriangle(*pieces[0][i].faces.begin());
 		int pos = obj.Postion(T);
@@ -524,7 +523,7 @@ Yin Yin::meet(Yin& obj)
 
 	Yin fin;
 	fin.Pasting(res);
-	fin.GenerateHasseDigram();
+
 	return fin;
 }
 
@@ -536,7 +535,7 @@ Yin Yin::complement()
 	vector<Path> P;
 	vector<vector<Segment>> traces;
 	vector<Surface> pieces;
-	
+
 	P.resize(boundarys.size());
 	traces.resize(boundarys.size());
 	for (int i = 0; i < SI[0].size(); i++) {
@@ -550,14 +549,12 @@ Yin Yin::complement()
 	for (int i = 0; i < pieces.size(); i++) {
 		for (auto j = pieces[i].faces.begin(); j != pieces[i].faces.end(); j++) {
 			Triangle& T = *j;
-			swap(T[1],T[2]);
+			swap(T[1], T[2]);
 		}
 	}
 
 	Yin fin;
 	fin.Pasting(pieces);
-
-	fin.GenerateHasseDigram();
 
 	return fin;
 }

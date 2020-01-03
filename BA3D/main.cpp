@@ -214,12 +214,12 @@ int main() {
 	if (mode == 222) {
 		Yin Y[2];
 		Surface S[2];
-		S[0].LoadFromFile("tor.obj");
-		S[1].LoadFromFile("2xICO.obj");
+		S[0].LoadFromFile("model_.obj");
+		S[1].LoadFromFile("ring_stone.obj");
 		Y[0].split(S[0]);
 		Y[1].split(S[1]);
 
-		Yin res=Y[0].join(Y[1]);
+		Yin res=Y[0].complement().meet(Y[1]);
 		cout << res.boundarys.size() << endl;
 		res.OutPut("W",1);
 
