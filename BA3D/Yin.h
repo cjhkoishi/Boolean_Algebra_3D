@@ -4,8 +4,9 @@ class Yin
 {
 public:
 	bool status;
-	vector<Surface> boundarys;
+	vector<Mesh> boundarys;
 	vector<vector<int>> atoms;//
+	vector<int> Eular;
 
 	void GenerateHasseDigram();
 	int Postion(P3D p);
@@ -13,14 +14,15 @@ public:
 
 	void Intersect(Yin& obj,vector<SegInfo>& intersection0, vector<SegInfo>& intersection1);
 
-	void Cutting(vector<vector<Segment>> trace,vector<Surface>& result);
-	void Pasting(vector<Surface> pieces);
-	void split(Surface& S);
+	void Cutting(vector<vector<Segment>> trace,vector<Mesh>& result);
+	void Pasting(vector<Mesh> pieces);
+	void split(Mesh& S);
 
 	Yin meet(Yin& obj);
 	Yin complement();
 	Yin join(Yin& obj);
 
+	void InPut(string filename);
 	void OutPut(string name,int config=0);
 };
 

@@ -4,7 +4,7 @@
 
 
 
-void Surface::Cutting(vector<Segment> segs, vector<Surface>& result)
+void Mesh::Cutting(vector<Segment> segs, vector<Mesh>& result)
 {
 	result.clear();
 	UnionFind com;
@@ -53,7 +53,7 @@ void Surface::Cutting(vector<Segment> segs, vector<Surface>& result)
 		}
 	}
 	result.resize(com.ComponentsNum());
-	for_each(result.begin(), result.end(), [&](Surface& M) {M.vertices = vertices; M.faces.clear(); });
+	for_each(result.begin(), result.end(), [&](Mesh& M) {M.vertices = vertices; M.faces.clear(); });
 	map<int, int> index;
 	int k = 0;
 	for (int i = 0; i < vec_faces.size(); i++) {
@@ -61,13 +61,13 @@ void Surface::Cutting(vector<Segment> segs, vector<Surface>& result)
 			index[com.Find(i)] = k;
 			k++;
 		}
-		Surface& M = result[index[com.Find(i)]];
+		Mesh& M = result[index[com.Find(i)]];
 		M.faces.push_back(vec_faces[i]);
 	}
-	for_each(result.begin(), result.end(), [&](Surface& M) {M.AdjustVerticesID(); });
+	for_each(result.begin(), result.end(), [&](Mesh& M) {M.AdjustVerticesID(); });
 }
 
-void Surface::Pasting(vector<Surface> pieces)
+void Mesh::Pasting(vector<Mesh> pieces)
 {
 	faces.clear();
 	vertices.clear();
@@ -104,7 +104,7 @@ void Surface::Pasting(vector<Surface> pieces)
 	}
 }
 
-void Surface::LoadFromFile(string filename)
+void Mesh::LoadFromFile(string filename)
 {
 	fstream fin(filename, ios::in);
 	string str;
@@ -133,7 +133,7 @@ void Surface::LoadFromFile(string filename)
 	fin.close();
 }
 
-void Surface::WriteToFile(string filename)
+void Mesh::WriteToFile(string filename)
 {
 	fstream fout(filename, ios::out);
 	map<int, int> index;
@@ -149,7 +149,7 @@ void Surface::WriteToFile(string filename)
 	fout.close();
 }
 
-void Surface::AdjustVerticesID()
+void Mesh::AdjustVerticesID()
 {
 	set<int> buffer;
 	for_each(faces.begin(), faces.end(), [&](Triangle T) {
@@ -185,7 +185,7 @@ void Surface::AdjustVerticesID()
 		});
 }
 
-int Surface::Postion(P3D p)
+int Mesh::Postion(P3D p)
 {
 	int random_factor = 0;
 	bool sign = Orientation();
@@ -221,7 +221,7 @@ int Surface::Postion(P3D p)
 	}
 }
 
-int Surface::Postion(TriangleP T_)
+int Mesh::Postion(TriangleP T_)
 {
 	P3D p = (1.0 / 3) * (T_.vert[0] + T_.vert[1] + T_.vert[2]);
 
@@ -262,7 +262,7 @@ int Surface::Postion(TriangleP T_)
 	return 0;
 }
 
-double Surface::Vol()
+double Mesh::Vol()
 {
 	double res = 0;
 	for_each(faces.begin(), faces.end(), [&](Triangle T) {
@@ -276,12 +276,12 @@ double Surface::Vol()
 	return res / 6;
 }
 
-bool Surface::Orientation()
+bool Mesh::Orientation()
 {
 	return Vol() > 0;
 }
 
-int Surface::MaxIndex()
+int Mesh::MaxIndex()
 {
 	int m = 0;
 	for_each(vertices.begin(), vertices.end(), [&](auto& element) {
@@ -291,7 +291,7 @@ int Surface::MaxIndex()
 	return m;
 }
 
-void Surface::Intersect(Surface sub, SegInfo& SI1, SegInfo& SI2)
+void Mesh::Intersect(Mesh sub, SegInfo& SI1, SegInfo& SI2)
 {
 	SegInfo SI;
 	vector<TriangleP> Tris;
@@ -339,7 +339,7 @@ void Surface::Intersect(Surface sub, SegInfo& SI1, SegInfo& SI2)
 		});
 }
 
-bool Surface::OCScheck()
+bool Mesh::OCScheck()
 {
 	map<Segment, Segment> one_chain;
 	for_each(faces.begin(), faces.end(), [&](Triangle& T) {
@@ -364,15 +364,15 @@ bool Surface::OCScheck()
 	return true;
 }
 
-TriangleP Surface::GetGeoTriangle(Triangle T)
+TriangleP Mesh::GetGeoTriangle(Triangle T)
 {
 	return TriangleP(vertices[T[0]], vertices[T[1]], vertices[T[2]]);
 }
 
-Surface Surface::meet(Surface sub)
+Mesh Mesh::meet(Mesh sub)
 {
-	Surface res;
-	vector<Surface> pieces[3];
+	Mesh res;
+	vector<Mesh> pieces[3];
 	SegInfo SI[2];
 
 	Intersect(sub, SI[0], SI[1]);
@@ -404,28 +404,28 @@ Surface Surface::meet(Surface sub)
 	return res;
 }
 
-Surface Surface::join(Surface sub)
+Mesh Mesh::join(Mesh sub)
 {
-	Surface S1 = inverse();
-	Surface S2 = sub.inverse();
-	Surface res = S1.meet(S2);
+	Mesh S1 = inverse();
+	Mesh S2 = sub.inverse();
+	Mesh res = S1.meet(S2);
 	return res.inverse();
 }
 
-Surface Surface::inverse()
+Mesh Mesh::inverse()
 {
-	Surface res(*this);
+	Mesh res(*this);
 	for_each(res.faces.begin(), res.faces.end(), [&](Triangle& T) {
 		swap(T[1], T[2]);
 		});
 	return res;
 }
 
-Surface::Surface()
+Mesh::Mesh()
 {
 }
 
-Surface::~Surface()
+Mesh::~Mesh()
 {
 }
 
@@ -708,11 +708,26 @@ TriangleP::TriangleP(P3D P, P3D Q, P3D R)
 	vert[2] = R;
 }
 
-void Path::Construct(Surface S, SegInfo SI)
+void Path::Construct(Mesh S, SegInfo SI)
 {
-	this->target = new Surface(S);
+	this->target = new Mesh(S);
 	int m = S.MaxIndex() + 1;
 	map<P3D, int, comparator> pool;
+
+	//生成领域结构
+	map<Segment, vector<Triangle>> adj;
+	for (auto i = S.faces.begin(); i != S.faces.end(); i++) {
+		Triangle T = *i;
+		for (int v = 0; v < 3; v++) {
+			Segment l;
+			l[0] = T[v];
+			l[1] = T[(v + 1) % 3];
+			l.sort();
+			adj[l].push_back(T);
+		}
+	}
+
+
 	for_each(S.vertices.begin(), S.vertices.end(), [&](pair<int, P3D> element) {
 		pool[element.second] = element.first;
 		});
@@ -730,20 +745,78 @@ void Path::Construct(Surface S, SegInfo SI)
 			auto d = S.faces.begin();
 			for (int i = 0; i < sof.first; i++)
 				d++;
-			lab.tri = *d;
 
+			//添加第一个点
+			lab.tri = *d;
 			lab.belong_ID = pool[element.first.vert[0]];
 			lab.pos_code = sof.second.code[0];
 			lab.uv = sof.second.uv[0];
 			auto& L0 = new_points[pool[element.first.vert[0]]].labels;
 			if (find(L0.begin(), L0.end(), lab) == L0.end())
-				new_points[pool[element.first.vert[0]]].labels.push_back(lab);
+				L0.push_back(lab);
+			if (lab.pos_code < 6 && lab.pos_code >= 3) {
+				int v = lab.pos_code - 3;
+				Segment l;
+				l[0] = lab.tri[v];
+				l[1] = lab.tri[(v + 1) % 3];
+				l.sort();
+				auto& K = adj[l];
+				for (int i = 0; i < K.size(); i++) {
+					if (!(K[i] == *d)) {
+						lab.tri = K[i];
+						lab.uv = S.GetGeoTriangle(K[i]).AffineCoor(element.first.vert[0]);
+						int w = 0;
+						while (true) {
+							Segment h;
+							h[0] = lab.tri[w];
+							h[1] = lab.tri[(w + 1) % 3];
+							h.sort();
+							if (h == l)
+								break;
+							w++;
+						}
+						lab.pos_code = 3 + w;
+						if (find(L0.begin(), L0.end(), lab) == L0.end())
+							L0.push_back(lab);
+					}
+				}
+			}
+			//添加第二个点
+			lab.tri = *d;
 			lab.belong_ID = pool[element.first.vert[1]];
 			lab.pos_code = sof.second.code[1];
 			lab.uv = sof.second.uv[1];
 			auto& L1 = new_points[pool[element.first.vert[1]]].labels;
 			if (find(L1.begin(), L1.end(), lab) == L1.end())
-				new_points[pool[element.first.vert[1]]].labels.push_back(lab);
+				L1.push_back(lab);
+			if (lab.pos_code < 6 && lab.pos_code >= 3) {
+				int v = lab.pos_code - 3;
+				Segment l;
+				l[0] = lab.tri[v];
+				l[1] = lab.tri[(v + 1) % 3];
+				l.sort();
+				auto& K = adj[l];
+				for (int i = 0; i < K.size(); i++) {
+					if (!(K[i] == *d)) {
+						lab.tri = K[i];
+						lab.uv = S.GetGeoTriangle(K[i]).AffineCoor(element.first.vert[1]);
+						int w = 0;
+						while (true) {
+							Segment h;
+							h[0] = lab.tri[w];
+							h[1] = lab.tri[(w + 1) % 3];
+							h.sort();
+							if (h == l)
+								break;
+							w++;
+						}
+						lab.pos_code = 3 + w;
+						if (find(L1.begin(), L1.end(), lab) == L1.end())
+							L1.push_back(lab);
+					}
+				}
+			}
+
 
 			});
 
@@ -853,11 +926,7 @@ void Path::Triangulate()
 			bool invalid = code[0] < 3 && (code[1] < 3 || code[1] == code[0] + 3 || code[1] == (code[0] + 2) % 3 + 3);
 			invalid |= code[0] >= 3 && code[0] < 6 && (code[1] == code[0] || code[1] == code[0] - 3 || code[1] == (code[0] - 2) % 3);
 
-			if (code[0] == 6 || code[1] == 6 || !invalid/*判断是否为内部边（incomplete）*/) {
-				if (element.first[0] == 0 &&
-					element.first[1] == 3 &&
-					element.first[2] == 2)
-					cout <<"("<< seg[0] <<"," << seg[1] <<")"<< endl;
+			if (code[0] == 6 || code[1] == 6 || !invalid) {
 				G.AddEdge(ID[seg[0]], ID[seg[1]]);
 			}
 			});
@@ -881,7 +950,7 @@ void Path::Triangulate()
 	new_points.clear();
 }
 
-Path::Path(Surface S, SegInfo SI)
+Path::Path(Mesh S, SegInfo SI)
 {
 	Construct(S, SI);
 }

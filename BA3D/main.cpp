@@ -121,7 +121,7 @@ int main() {
 		return 0;
 	}
 	if (mode == 10) {
-		Surface S1, S2;
+		Mesh S1, S2;
 		vector<TriangleP> Tris;
 		SegInfo segs1, segs2;
 		S1.LoadFromFile("sphere.obj");
@@ -156,7 +156,7 @@ int main() {
 			ss << index++ << ".obj";
 			element.WriteToFile(ss.str());
 			});*/
-		Surface S3 = S1.join(S2);
+		Mesh S3 = S1.join(S2);
 		S3.WriteToFile("res.obj");
 		cout << S1.OCScheck() << endl;
 		cout << S2.OCScheck() << endl;
@@ -166,7 +166,7 @@ int main() {
 		return 0;
 	}
 	if (mode == 5) {
-		Surface S;
+		Mesh S;
 		S.LoadFromFile("ar3k.obj");
 		for (int i = 0; i < 21; i++) {
 			for (int j = 0; j < 21; j++) {
@@ -179,7 +179,7 @@ int main() {
 		/*cout << S.Postion(P3D(1, 0.6, 0.6)) << " ";*/
 	}
 	if (mode == 6) {
-		Surface S;
+		Mesh S;
 		S.LoadFromFile("ar3k.obj");
 		cout << S.Vol() << endl;
 		P3D p1(1e-10, 1e-10, 1e-10);
@@ -187,7 +187,7 @@ int main() {
 		cout << (p1 == p2) << endl;
 	}
 	if (mode == 7) {
-		Surface bag;
+		Mesh bag;
 		bag.LoadFromFile("double.obj");
 		Yin Y;
 		Y.split(bag);
@@ -196,7 +196,7 @@ int main() {
 	}
 	if (mode == 111) {
 		Yin Y;
-		Surface cube[4];
+		Mesh cube[4];
 		cube[0].LoadFromFile("Yin/CubeT/cube0.obj");
 		cube[1].LoadFromFile("Yin/CubeT/cube1.obj");
 		cube[2].LoadFromFile("Yin/CubeT/cube2.obj");
@@ -213,20 +213,20 @@ int main() {
 	}
 	if (mode == 222) {
 		Yin Y[2];
-		Surface S[2];
-		S[0].LoadFromFile("model_.obj");
-		S[1].LoadFromFile("ring_stone.obj");
+		Mesh S[2];
+		S[0].LoadFromFile("floor.obj");
+		S[1].LoadFromFile("complex_hasse.obj");
 		Y[0].split(S[0]);
 		Y[1].split(S[1]);
 
-		Yin res=Y[0].complement().meet(Y[1]);
+		Yin res=Y[1].join(Y[0]);
 		cout << res.boundarys.size() << endl;
 		res.OutPut("W",1);
 
 		return 0;
 	}
 	if (mode == 333) {
-		Surface adj;
+		Mesh adj;
 		adj.LoadFromFile("ar3k_.obj");
 		for (auto i = adj.vertices.begin(); i != adj.vertices.end(); i++) {
 			i->second = 2 * (i->second);

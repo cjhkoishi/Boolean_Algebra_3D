@@ -57,14 +57,14 @@ struct SOF {
 typedef map<SegmentP, map<int,SOF>, Seg_Comp> SegInfo;
 void FindIntersection(vector<TriangleP> Ts, SegInfo& intersections);
 
-class Surface
+class Mesh
 {
 public:
 	map<int, P3D> vertices;
 	list<Triangle> faces;
 
-	void Cutting(vector<Segment> segs, vector<Surface>& result);
-	void Pasting(vector<Surface> pieces);
+	void Cutting(vector<Segment> segs, vector<Mesh>& result);
+	void Pasting(vector<Mesh> pieces);
 	void LoadFromFile(string filename);
 	void WriteToFile(string filename);
 	void AdjustVerticesID();
@@ -73,17 +73,17 @@ public:
 	double Vol();
 	bool Orientation();
 	int MaxIndex();
-	void Intersect(Surface sub,SegInfo& SI1,SegInfo& SI2);
+	void Intersect(Mesh sub,SegInfo& SI1,SegInfo& SI2);
 
 	bool OCScheck();
 	TriangleP GetGeoTriangle(Triangle T);
 
-	Surface meet(Surface sub);
-	Surface join(Surface sub);
-	Surface inverse();
+	Mesh meet(Mesh sub);
+	Mesh join(Mesh sub);
+	Mesh inverse();
 
-	Surface();
-	~Surface();
+	Mesh();
+	~Mesh();
 };
 
 //表示三角网格表面上的图，用于存储交线信息
@@ -113,14 +113,14 @@ public:
 		vector<Label> labels;
 	};
 
-	Surface* target;//目标曲面
+	Mesh* target;//目标曲面
 	map<int, PointInfo> new_points;//新点（包括所在三角面，位置标示码）索引对应于原顶点不重复的顶点ID
 	vector<Segment> segs;//线段
 
-	void Construct(Surface S, SegInfo SI);
+	void Construct(Mesh S, SegInfo SI);
 	void Triangulate();
 
 	Path() {};
-	Path(Surface S,SegInfo SI);
+	Path(Mesh S,SegInfo SI);
 	~Path();
 };

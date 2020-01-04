@@ -6,6 +6,8 @@ void Yin::GenerateHasseDigram()
 {
 
 	atoms.clear();
+	if (boundarys.size() == 0)
+		return;
 	auto copy = boundarys;
 	list<Simplex<2>> hasse;
 	vector<bool> signs;
@@ -114,7 +116,7 @@ void Yin::GenerateHasseDigram()
 		connected[i] = false;
 	}
 	for_each(hasse.begin(), hasse.end(), [&](Simplex<2>& s) {
-		if (s[0] == 1 && s[1] == 0) {
+		if (depths[s[0]] == 1 && depths[s[1]] == 0) {
 			connected[s[0]] = connected[s[1]] = true;
 			A.Union(s[0], s[1]);
 		}
@@ -131,6 +133,8 @@ void Yin::GenerateHasseDigram()
 		}
 	}
 
+	status = !root_sign;
+
 	atoms.resize(A.ComponentsNum());
 	map<int, int> index_map;
 	int l = 0;
@@ -144,6 +148,8 @@ void Yin::GenerateHasseDigram()
 
 int Yin::Postion(P3D p)
 {
+	if (boundarys.size() == 0)
+		return status ? 1 : 0;
 	bool res = false;
 	for (int i = 0; i < atoms.size(); i++) {
 		bool component_res = true;
@@ -160,6 +166,8 @@ int Yin::Postion(P3D p)
 
 int Yin::Postion(TriangleP T)
 {
+	if (boundarys.size() == 0)
+		return status ? 1 : 0;
 	bool res = false;
 	for (int i = 0; i < atoms.size(); i++) {
 		bool component_res = true;
@@ -289,22 +297,22 @@ void Yin::Intersect(Yin& obj, vector<SegInfo>& intersection0, vector<SegInfo>& i
 	}
 }
 
-void Yin::Cutting(vector<vector<Segment>> trace, vector<Surface>& result)
+void Yin::Cutting(vector<vector<Segment>> trace, vector<Mesh>& result)
 {
 	if (trace.size() != boundarys.size()) {
 		cout << "unavalidable traces" << endl;
 		return;
 	}
 	for (int i = 0; i < boundarys.size(); i++) {
-		vector<Surface> h;
+		vector<Mesh> h;
 		boundarys[i].Cutting(trace[i], h);
 		result.insert(result.begin(), h.begin(), h.end());
 	}
 }
 
-void Yin::Pasting(vector<Surface> pieces)
+void Yin::Pasting(vector<Mesh> pieces)
 {
-	Surface M;
+	Mesh M;
 	vector<int> offsets;
 	offsets.resize(pieces.size());
 	offsets[0] = 0;
@@ -340,8 +348,12 @@ void Yin::Pasting(vector<Surface> pieces)
 	split(M);
 }
 
-void Yin::split(Surface& S)
+void Yin::split(Mesh& S)
 {
+	boundarys.clear();
+	atoms.clear();
+	if (S.faces.size() == 0)
+		return;
 
 	map<int, vector<int>> st;//ÐÇÐÎËã×Ó
 	vector<Triangle> vfaces(S.faces.begin(), S.faces.end());
@@ -477,6 +489,13 @@ void Yin::split(Surface& S)
 	}
 
 	GenerateHasseDigram();
+
+	Eular.resize(boundarys.size());
+	for (int i = 0; i < Eular.size(); i++) {
+		int V = boundarys[i].vertices.size();
+		int F = boundarys[i].faces.size();
+		Eular[i] = V - F / 2;
+	}
 }
 
 Yin Yin::meet(Yin& obj)
@@ -485,7 +504,7 @@ Yin Yin::meet(Yin& obj)
 	Intersect(obj, SI[0], SI[1]);
 	vector<Path> P[2];
 	vector<vector<Segment>> traces;
-	vector<Surface> pieces[2], res;
+	vector<Mesh> pieces[2], res;
 
 	P[0].resize(boundarys.size());
 	P[1].resize(obj.boundarys.size());
@@ -524,17 +543,21 @@ Yin Yin::meet(Yin& obj)
 	Yin fin;
 	fin.Pasting(res);
 
+	fin.status = status && obj.status;
+
 	return fin;
 }
 
 Yin Yin::complement()
 {
+	Yin fin;
+
 	Yin Null;
 	vector<SegInfo> SI[2];
 	Intersect(Null, SI[0], SI[1]);
 	vector<Path> P;
 	vector<vector<Segment>> traces;
-	vector<Surface> pieces;
+	vector<Mesh> pieces;
 
 	P.resize(boundarys.size());
 	traces.resize(boundarys.size());
@@ -552,9 +575,9 @@ Yin Yin::complement()
 			swap(T[1], T[2]);
 		}
 	}
-
-	Yin fin;
 	fin.Pasting(pieces);
+
+	fin.status = !status;
 
 	return fin;
 }
@@ -566,6 +589,13 @@ Yin Yin::join(Yin& obj)
 	Yin m = inv0.meet(inv1);
 	Yin res = m.complement();
 	return res;
+}
+
+void Yin::InPut(string filename)
+{
+	Mesh S;
+	S.LoadFromFile(filename);
+	split(S);
 }
 
 void Yin::OutPut(string name, int config)
@@ -580,7 +610,7 @@ void Yin::OutPut(string name, int config)
 	}
 	else if (config == 1) {
 		ss << name << ".obj";
-		Surface all;
+		Mesh all;
 		all.Pasting(boundarys);
 		all.WriteToFile(ss.str());
 	}
